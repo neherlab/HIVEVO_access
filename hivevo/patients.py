@@ -11,34 +11,14 @@ from samples import *
 from Bio import SeqIO
 
 
-
-
-# Functions
-def load_patients(pnames=None):
-    '''Load patients from general table'''
-    from hivwholeseq.sequencing.filenames import table_filename
-    patients = pd.read_excel(table_filename, 'Patients', index_col=1)
-    patients.index = pd.Index(map(str, patients.index))
-    if pnames is not None:
-        patients = patients.loc[pnames]
-    return patients
-
-
-def load_patient(pname):
-    '''Get the patient from the sequences ones'''
-    patients = load_patients()
-    if pname in patients.index:
-        return patients.loc[pname]
-    else:
-        return patients.loc[patients.code == pname].iloc[0]
-
 # Classes
 class Patient(pd.Series):
     '''HIV patient'''
 
-    def __init__(self, name, include_cell=False):
+    def __init__(self, *args, **kwargs):
         '''Initialize a patient with all his samples'''
-        super(Patient, self).__init__(load_patient(name))
+        include_cell = kwargs.pop('include_cell', False)
+        super(Patient, self).__init__(*args, **kwargs)
         self.samples = sorted(load_samples_sequenced(patients=[self.name], include_cell=include_cell), 
                               key = lambda x:x.date)
         self._dates = [x.date for x in self.samples]
@@ -53,6 +33,16 @@ class Patient(pd.Series):
         self._times = []
         self.reference = self.load_reference()
         self.annotation = {x.qualifiers['note'][-1]:x for x in self.reference.features}
+
+    @classmethod
+    def load(cls, pname):
+        from hivwholeseq.sequencing.filenames import table_filename
+        patients = pd.read_excel(table_filename, 'Patients', index_col=1)
+        patients.index = pd.Index(map(str, patients.index))
+        if pname in patients.index:
+            return cls(patients.loc[pname])
+        else:
+            return cls(patients.loc[patients.code == pname].iloc[0])
 
     @property
     def _constructor(self):
@@ -239,5 +229,6 @@ class Patient(pd.Series):
 if __name__=="__main__":
     from matplotlib import pyplot as plt
     plt.ion()
-    p = Patient(name = '20097')
+    p = Patient.load('20097')
+    p = Patient.load('p3')
 
