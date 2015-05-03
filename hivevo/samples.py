@@ -29,8 +29,35 @@ class SamplePat(pd.Series):
 
     def get_n_templates_dilutions(self):
         '''Get the time course of the number of templates to PCR, limiting depth'''
-        from hivwholeseq.patients.get_template_number import get_template_number
-        return get_template_number(self.dilutions)
+        dilutions = np.array([10,100,1000, 10000, 100000], dtype = int)
+        successful = []
+        dilstr = self.dilutions
+        # parse the dilations string expected to be of type 1:100 (1/2), where (1/2) mean one successful
+        # amplification out of 2 trials
+        if not isinstance(dilstr, basestring):
+            print "expecting a string"
+        else:
+            dil_factor = float(dilstr.split()[0].split(':')[1])
+            n_positive = map(int, dilstr.split()[1][1:-1].split('/'))
+        for dil in dilutions:
+            if dil<dil_factor:
+                successful.append([2,2])
+            elif dil==dil_factor:
+                successful.append(n_positive)
+            else:
+                successful.append([0,2])
+        successful = np.array(successful) # -> successful now contains [0] the number of successful dilutations in [1] trials
+        def prob(logcn, dil, suc):
+            # no amplifiable molecule: p=exp(-cn/dil*0.5) -> 2/2 (1-p)^2; 1/2: 2p(1-p); 0/2: p^2
+            # the extra 0,5 in th exponent accounts for the fact that we do to series starting with
+            # a total of 1/10th of the material for fragment 4
+            p = np.exp(-np.exp(logcn)/dil*0.5)
+            return -np.sum( np.log((suc[:,0]==2)*(1-p)**2 + (suc[:,0]==1)*2*p*(1-p) + (suc[:,0]==0)*p**2 ))
+
+        from scipy.optimize import minimize
+        x_opt = minimize(prob, x0=2.0, args = (dilutions, successful), method='Powell')
+        val = np.exp(x_opt.x)
+        return val*2
 
     def _get_allele_counts(self, fragment, use_PCR1, VERBOSE):
         '''Get allele counts for a single patient sample'''
