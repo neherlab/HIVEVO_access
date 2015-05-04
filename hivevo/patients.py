@@ -226,6 +226,22 @@ class Patient(pd.Series):
             except:
                 raise ValueError("ROI not understood")
 
+    def positions_to_features(self):
+        '''
+        map of positions to features, including the number of proteins, RNA, etc this pos is part of
+        '''
+        self.pos_to_feature = [{'protein':0, 'RNA':0, 'LTR':0, 'codons':[]} 
+                                for pos in xrange(len(self.reference))]
+        for fname, feature in self.annotation.iteritems():
+            for ii, pos in enumerate(feature):
+                if feature.type=='protein':
+                    self.pos_to_feature['protein']+=1
+                    self.codons.append((fname, ii//3, pos%3))
+                elif feature.type=='RNA':
+                    self.pos_to_feature['RNA']+=1
+                elif 'LTR' in fname:
+                    self.pos_to_feature['LTR']+=1
+
 if __name__=="__main__":
     from matplotlib import pyplot as plt
     plt.ion()
