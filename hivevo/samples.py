@@ -10,7 +10,7 @@ import pandas as pd
 import sys,os
 sys.path.append('/ebio/ag-neher/share/users/rneher/mapping')
 from hivwholeseq.sequencing.filenames import table_filename
-
+from collections import defaultdict
 
 
 # Classes
@@ -26,13 +26,12 @@ class SamplePat(pd.Series):
     def _constructor(self):
         return SamplePat
 
-
     def get_n_templates_dilutions(self):
         '''Get the time course of the number of templates to PCR, limiting depth'''
-        dilutions = np.array([10,100,1000, 10000, 100000], dtype = int)
+        dilutions = np.array([1, 10,100,1000, 10000, 100000], dtype = int)
         successful = []
         dilstr = self.dilutions
-        # parse the dilations string expected to be of type 1:100 (1/2), where (1/2) mean one successful
+        # parse the dilutions string expected to be of type 1:100 (1/2), where (1/2) mean one successful
         # amplification out of 2 trials
         if not isinstance(dilstr, basestring):
             print "expecting a string"
@@ -47,9 +46,10 @@ class SamplePat(pd.Series):
             else:
                 successful.append([0,2])
         successful = np.array(successful) # -> successful now contains [0] the number of successful dilutations in [1] trials
+
         def prob(logcn, dil, suc):
             # no amplifiable molecule: p=exp(-cn/dil*0.5) -> 2/2 (1-p)^2; 1/2: 2p(1-p); 0/2: p^2
-            # the extra 0,5 in th exponent accounts for the fact that we do to series starting with
+            # the extra 0.5 in the exponent accounts for the fact that we do to series starting with
             # a total of 1/10th of the material for fragment 4
             p = np.exp(-np.exp(logcn)/dil*0.5)
             return -np.sum( np.log((suc[:,0]==2)*(1-p)**2 + (suc[:,0]==1)*2*p*(1-p) + (suc[:,0]==0)*p**2 ))
@@ -57,7 +57,7 @@ class SamplePat(pd.Series):
         from scipy.optimize import minimize
         x_opt = minimize(prob, x0=2.0, args = (dilutions, successful), method='Powell')
         val = np.exp(x_opt.x)
-        return val*2
+        return val
 
     def _get_allele_counts(self, fragment, use_PCR1, VERBOSE):
         '''Get allele counts for a single patient sample'''
@@ -87,7 +87,7 @@ class SamplePat(pd.Series):
         for fragment in ['F'+str(i) for i in range(1,7)]:
             if fragment in coordinates:
                 tmp_ac = self._get_allele_counts(fragment, use_PCR1, VERBOSE)
-                if tmp_ac is not None:
+                if tmp_ac[0] is not None:
                     if add:
                         ac[:,coordinates[fragment][0]]+=tmp_ac[:,coordinates[fragment][1]]
                     else:
@@ -103,17 +103,42 @@ class SamplePat(pd.Series):
         cov = ac.sum(axis=0)
         af = np.ma.masked_array(ac, dtype=float)
         af/=cov+1e-10
-        af.mask += np.repeat([cov_min<0], aft.shape[0], axis=0)
+        af.mask += np.repeat([cov<cov_min], af.shape[0], axis=0)
         return af
         
     def get_coverage(self, coordinates, add=True,use_PCR1=1, VERBOSE=0, **kwargs):
         ac = self.get_allele_counts(coordinates, add=add, cov_min=None, use_PCR1=use_PCR1, VERBOSE=VERBOSE, **kwargs)
         return ac.sum(axis=0)
 
-    def get_local_haplotypes(self, fragment, start, stop):
-                             VERBOSE=0, maxreads=-1, filters=None, PCR=1):
+    def haplotypes(self, fragment, start, stop, VERBOSE=0, maxreads=-1, filters=None, PCR=1):
+        from hivwholeseq.patients.get_local_haplotypes import get_local_haplotypes
+        from hivwholeseq.patients.filenames import get_mapped_filtered_filename
+        bam_fname = get_mapped_filtered_filename(self.patient, self.name, fragment, type='bam', PCR=PCR, decontaminated=True)
+        #try:
+        return get_local_haplotypes(bam_fname, start, stop)
+    #    except:
+     #       raise ValueError("can't read haplotypes")
 
-        
+    def tile_region(self, coordinates, length, padding):
+        haps = defaultdict(list)
+        for frag in ['F'+str(i) for i in range(1,7)]:
+            if frag in coordinates:
+                region_indices = coordinates[frag][0]
+                fragment_indices = coordinates[frag][1]
+                global_indices = coordinates[frag][0] + coordinates['start']
+                start = fragment_indices[0]
+                stop = start + length + padding
+                while stop < fragment_indices[-1]:
+                    if True: #try:
+                        res = (start, stop, self.haplotypes(frag, start, stop))
+                    else: #except:
+                        print "can't read haplotypes"
+                        res = (start, stop, None)
+                    haps[frag].append(res)
+                    start += length
+                    stop = start + length + padding
+        return haps
+
 # Functions
 def load_samples_sequenced(patients=None, include_wrong=False, include_cell=False):
     '''Load patient samples sequenced from general table'''

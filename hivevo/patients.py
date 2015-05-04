@@ -8,9 +8,9 @@ content:    Data access module HIV patients.
 import numpy as np
 import pandas as pd
 from samples import *
+from af_tools import *
 from Bio import SeqIO
-
-
+from hivwholeseq.utils.sequence import alpha, alphaa
 # Classes
 class Patient(pd.Series):
     '''HIV patient'''
@@ -33,6 +33,7 @@ class Patient(pd.Series):
         self._times = []
         self.reference = self.load_reference()
         self.annotation = {x.qualifiers['note'][-1]:x for x in self.reference.features}
+        self._initial_consensus_noinsertions()
 
     @classmethod
     def load(cls, pname):
@@ -51,9 +52,7 @@ class Patient(pd.Series):
     @property
     def transmission_date(self):
         '''The most likely time of transmission'''
-        return self['last negative date'] + \
-                (self['first positive date'] - self['last negative date']) / 2
-
+        return self['last negative date'] + (self['first positive date'] - self['last negative date']) / 2
 
     @property
     def dates(self):
@@ -64,7 +63,6 @@ class Patient(pd.Series):
     @property
     def cd4(self):
         return self._cd4
-
     @property
     def dsi(self):
         return self.times(unit='days')
@@ -98,7 +96,6 @@ class Patient(pd.Series):
         '''Get the number of templates, estimated from the viral load'''
         return self._n_templates_viral_load
 
-
     def get_n_templates_roi(self, roi):
         '''Get number of templates, roi specific from overlap frequencies'''
         # FIXME: this loads stuff from get_roi, which then goes back to patient
@@ -113,27 +110,38 @@ class Patient(pd.Series):
         '''The initial sample used as a mapping reference'''
         return self.samples[0]
 
-
     def load_reference(self):
         from hivwholeseq.patients.filenames import get_initial_reference_filename
         return SeqIO.read(get_initial_reference_filename(self.name, "genomewide", format='gb'), 'gb')
 
+    def _region_to_indices(self,region):
+        if region=='genomewide':
+            return np.arange(len(self.reference))
+        elif region in self.annotation:
+            return np.array([int(x) for x in self.annotation[region]], dtype=int)
+        else:
+            raise ValueError('no annotation with name '+region)
 
     def _annotation_to_fragment_indices(self, anno):
+        '''
+        returns coordinates of a region specified in the annotation
+        in terms of the fragments F1 to F5. This is needed to extract 
+        region specific allele counts, frequencies etc
+        '''
         coordinates = {}
-        ind = [int(x) for x in self.annotation[anno]]
-        coordinates['start'] = min(ind)
-        coordinates['length'] = len(ind)
+        region_indices = self._region_to_indices(anno)
+        coordinates['start'] = min(region_indices)
+        coordinates['length'] = len(region_indices)
         fragments = ['F'+str(i) for i in xrange(1,7)]
         if anno not in fragments:
-            for frag in fragments:
-                frag_ind = set([int(x) for x in self.annotation[frag]])
-                anno_indices_on_fragment = sorted(frag_ind.intersection(ind))
-                if len(anno_indices_on_fragment):
-                    anno_indices_self = np.arange(coordinates['length'])[np.in1d(ind, anno_indices_on_fragment)]
+            for frag in fragments: # loop over fragments and extract the indices of the region on this fragment
+                frag_ind = set(self._region_to_indices(frag))       # indices of the fragment
+                region_indices_on_fragment = sorted(frag_ind.intersection(region_indices))  # intersection of region and fragment positions
+                if len(region_indices_on_fragment): # attach indices in region and on fragment
+                    anno_indices_self = np.arange(coordinates['length'])[np.in1d(region_indices, region_indices_on_fragment)]
                     coordinates[frag] = (anno_indices_self, 
-                                       np.array(anno_indices_on_fragment)- int(self.annotation[frag].location.start))
-        else:
+                                       np.array(region_indices_on_fragment)- int(self.annotation[frag].location.start))
+        else: # if requested region is a fragment, return only this fragment
             coordinates[anno] = (np.arange(coordinates['length']), np.arange(coordinates['length']))
         return coordinates
 
@@ -153,7 +161,7 @@ class Patient(pd.Series):
         Note: the genomewide counts are currently saved to file.
         '''
         coordinates = self._annotation_to_fragment_indices(region)
-        act = np.ma.array([tmp_sample.get_allele_counts(coordinates, **kwargs) for tmp_sample in self.samples])
+        act = np.ma.array([tmp_sample.get_allele_counts(coordinates, **kwargs) for tmp_sample in self.samples], hard_mask=True)
         # set very low frequencies to zero, these are likely sequencing errors
         return act
 
@@ -167,47 +175,43 @@ class Patient(pd.Series):
         Note: the genomewide counts are currently saved to file.
         '''
         coordinates = self._annotation_to_fragment_indices(region)
-        aft = np.ma.array([tmp_sample.get_allele_frequencies(coordinates, **kwargs) for tmp_sample in self.samples])
+        aft = np.ma.array([tmp_sample.get_allele_frequencies(coordinates, **kwargs) for tmp_sample in self.samples], hard_mask=True)
         # set very low frequencies to zero, these are likely sequencing errors
         aft[aft<error_rate]=0
         return aft
 
-    @staticmethod
-    def get_initial_consensus_noinsertions(aft, VERBOSE=0, return_ind=False):
+    def _initial_consensus_noinsertions(self, VERBOSE=0, return_ind=False):
         '''Make initial consensus from allele frequencies, keep coordinates and masked
-        
-        Args:
-          aft (np.ma.ndarray): 3d masked array with the allele frequency trajectories
-
-        Returns:
-          np.ndarray: initial consensus, augmented with later time points at masked
-          positions, with Ns if never covered
+        sets: indices and sequence of initial sequence
         '''
-        from ..utils.sequence import alpha
-
-        af0 = aft[0]
+        aft = self.get_allele_frequency_trajectories('genomewide')
         # Fill the masked positions with N...
-        cons_ind = af0.argmax(axis=0)
-        cons_ind[af0[0].mask] = 5
+        cons_ind = aft[0].argmax(axis=0)
+        cons_ind[aft.mask[0].max(axis=0)] = 5
     
-        # ...then look in later time points
-        if aft.shape[0] == 1:
-            if return_ind:
-                return cons_ind
-            else:
-                return alpha[cons_ind]
-
         for af_later in aft[1:]:
             cons_ind_later = af_later.argmax(axis=0)
-            cons_ind_later[af_later[0].mask] = 5
+            cons_ind_later[af_later.mask.max(axis=0)] = 5
             ind_Ns = (cons_ind == 5) & (cons_ind_later != 5)
             cons_ind[ind_Ns] = cons_ind_later[ind_Ns]
-        if return_ind:
-            return cons_ind
-        else:
-            return alpha[cons_ind]
 
-    def get_map_coordinates_reference(self, roi, refname='HXB2', in_patient = True):
+        self.initial_indices = cons_ind
+        self.initial_sequence = alpha[cons_ind]
+
+    def get_diversity(self, region):
+        aft = self.get_allele_frequency_trajectories(region)
+        return np.array(map(diversity, aft))
+
+    def get_consensi(self, region):
+        aft = self.get_allele_frequency_trajectories(region)
+        return [''.join(consensus(x)) for x in aft]
+
+    def get_divergence(self, region):
+        aft = self.get_allele_frequency_trajectories(region)
+        region_initial_indices = self.initial_indices[self._region_to_indices(region)]
+        return np.array([divergence(x,region_initial_indices) for x in aft])
+
+    def map_to_external_reference(self, roi, refname='HXB2', in_patient = True):
         from hivwholeseq.patients.filenames import get_coordinate_map_filename
         genomewide_map = np.loadtxt(get_coordinate_map_filename(self.name, 'genomewide', refname=refname), dtype = int)
         if roi in self.annotation:
@@ -230,21 +234,23 @@ class Patient(pd.Series):
         '''
         map of positions to features, including the number of proteins, RNA, etc this pos is part of
         '''
-        self.pos_to_feature = [{'protein':0, 'RNA':0, 'LTR':0, 'codons':[]} 
+        self.pos_to_feature = [{'gene':0, 'RNA':0, 'LTR':0, 'codons':[], 'protein_codon':[]} 
                                 for pos in xrange(len(self.reference))]
         for fname, feature in self.annotation.iteritems():
             for ii, pos in enumerate(feature):
-                if feature.type=='protein':
-                    self.pos_to_feature['protein']+=1
-                    self.codons.append((fname, ii//3, pos%3))
-                elif feature.type=='RNA':
-                    self.pos_to_feature['RNA']+=1
+                if feature.type=='gene':
+                    self.pos_to_feature[pos]['gene']+=1
+                    self.pos_to_feature[pos]['codons'].append((fname, ii//3, ii%3))
+                elif feature.type=='protein':
+                    self.pos_to_feature[pos]['protein_codon'].append((fname, ii//3, ii%3))
                 elif 'LTR' in fname:
-                    self.pos_to_feature['LTR']+=1
+                    self.pos_to_feature[pos]['LTR']+=1
+                elif feature.type=='RNA_structure':
+                    self.pos_to_feature[pos]['RNA']+=1
 
 if __name__=="__main__":
     from matplotlib import pyplot as plt
     plt.ion()
-    p = Patient.load('20097')
-    p = Patient.load('p3')
+    #p = Patient.load('20097')
+    p = Patient.load('p5')
 
