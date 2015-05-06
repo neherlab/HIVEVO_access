@@ -29,7 +29,7 @@ class Patient(pd.Series):
         # We typically have 6 reactions with that total volume (plus the F4 dilution
         # series, but each of those uses only 0.1x template which is very little)
         self._n_templates_viral_load = np.array([x*0.4/6.1 for x in self._viral_load], dtype = float)
-        #self._n_templates_dilutions = np.ma.masked_invalid([x.get_n_template_dilutions() for x in self.samples])
+        self._n_templates_dilutions = np.ma.masked_invalid([x.get_n_templates_dilutions() for x in self.samples])
         self._times = []
         self.reference = self.load_reference()
         self.annotation = {x.qualifiers['note'][-1]:x for x in self.reference.features}
@@ -96,15 +96,6 @@ class Patient(pd.Series):
         '''Get the number of templates, estimated from the viral load'''
         return self._n_templates_viral_load
 
-    def get_n_templates_roi(self, roi):
-        '''Get number of templates, roi specific from overlap frequencies'''
-        # FIXME: this loads stuff from get_roi, which then goes back to patient
-        fragments = self.get_fragments_covered(roi)
-        n = [min(sample[fr+'q'] for fr in fragments)
-             for _, sample in self.samples.iterrows()]
-        n = np.ma.masked_invalid(n)
-        return n
-
     @property
     def initial_sample(self):
         '''The initial sample used as a mapping reference'''
@@ -161,7 +152,8 @@ class Patient(pd.Series):
         Note: the genomewide counts are currently saved to file.
         '''
         coordinates = self._annotation_to_fragment_indices(region)
-        act = np.ma.array([tmp_sample.get_allele_counts(coordinates, **kwargs) for tmp_sample in self.samples], hard_mask=True)
+        act = np.ma.array([tmp_sample.get_allele_counts(coordinates, **kwargs)
+                           for tmp_sample in self.samples], hard_mask=True, shrink=False)
         # set very low frequencies to zero, these are likely sequencing errors
         return act
 
@@ -175,7 +167,8 @@ class Patient(pd.Series):
         Note: the genomewide counts are currently saved to file.
         '''
         coordinates = self._annotation_to_fragment_indices(region)
-        aft = np.ma.array([tmp_sample.get_allele_frequencies(coordinates, **kwargs) for tmp_sample in self.samples], hard_mask=True)
+        aft = np.ma.array([tmp_sample.get_allele_frequencies(coordinates, **kwargs) 
+                          for tmp_sample in self.samples], hard_mask=True, shrink=False)
         # set very low frequencies to zero, these are likely sequencing errors
         aft[aft<error_rate]=0
         return aft
@@ -248,9 +241,19 @@ class Patient(pd.Series):
                 elif feature.type=='RNA_structure':
                     self.pos_to_feature[pos]['RNA']+=1
 
+    def get_fragment_depth(self, pad=False, limit_to_dilution = False):
+        c = self._annotation_to_fragment_indices('genomewide')
+        depth = np.ma.array([s.fragment_depth(c,cov_min = 100, var_min = 0.05, min_points = 10) for s in self.samples])
+        if pad:
+            for si in xrange(len(self.samples)):
+                depth[si][depth.mask[si]] = self.n_templates_dilutions[si]
+                depth.mask[si] = False
+        if limit_to_dilution:
+            for si in xrange(len(self.samples)):
+                depth[si] = np.minimum(depth[si], self.n_templates_dilutions[si])
+        return depth
+
 if __name__=="__main__":
     from matplotlib import pyplot as plt
     plt.ion()
-    #p = Patient.load('20097')
-    p = Patient.load('p5')
-
+    p = Patient.load('20097')
