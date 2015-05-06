@@ -129,27 +129,33 @@ class SamplePat(pd.Series):
 
     def get_pair_frequencies(self, fragment, var_min=0, use_PCR1=True, compressed=True):
         import gc
-        ac = self._get_allele_counts(fragment, use_PCR1, 0)
-        af1p = np.array(ac, dtype=float)/(1e-10+ac.sum(axis=0))
+        #ac = self._get_allele_counts(fragment, use_PCR1, 0)
+        #af1p = np.array(ac, dtype=float)/(1e-10+ac.sum(axis=0))
         #af1p.mask += np.repeat([ac.sum(axis=0)<cov_min], af1p.shape[0], axis=0)
-        acc = self.get_cocounts(fragment, use_PCR1=use_PCR1, compressed=compressed)
-        variable_sites = np.sum(af1p**2, axis=0)<1.-var_min
-        if variable_sites.sum():
-            reduced_af1p = af1p[:,variable_sites]
-            positions = np.where(variable_sites)[0]
-            n_variable_sites = reduced_af1p.shape[-1]
-            reduced_af2p = np.zeros((acc.shape[0], acc.shape[1], n_variable_sites, n_variable_sites), dtype = float)
-            for di,dsite in enumerate(positions):
-                reduced_af2p[:,:,di,:] = acc[:,:,dsite,variable_sites]
-
-            reduced_acc_cov = np.array(reduced_af2p.sum(axis=1).sum(axis=0), dtype=int)
-            reduced_af2p /= (1e-10+reduced_acc_cov) 
-            return_args = (positions, reduced_af2p, reduced_acc_cov, af1p[:,variable_sites])
-        else:
-            print "no variable sites"
+        try:
+            acc = self.get_cocounts(fragment, use_PCR1=use_PCR1, compressed=compressed)
+        except:
             return_args = (None, None, None, None)
-        del acc, af1p
-        gc.collect()
+        else:
+            af1p = np.array(acc[:,:,np.arange(acc.shape[2]), np.arange(acc.shape[3])].sum(axis=1),dtype=float)
+            af1p = af1p/(1e-10+af1p.sum(axis=0))
+            variable_sites = np.sum(af1p**2, axis=0)<1.-var_min
+            if variable_sites.sum():
+                reduced_af1p = af1p[:,variable_sites]
+                positions = np.where(variable_sites)[0]
+                n_variable_sites = reduced_af1p.shape[-1]
+                reduced_af2p = np.zeros((acc.shape[0], acc.shape[1], n_variable_sites, n_variable_sites), dtype = float)
+                for di,dsite in enumerate(positions):
+                    reduced_af2p[:,:,di,:] = acc[:,:,dsite,variable_sites]
+
+                reduced_acc_cov = np.array(reduced_af2p.sum(axis=1).sum(axis=0), dtype=int)
+                reduced_af2p /= (1e-10+reduced_acc_cov) 
+                return_args = (positions, reduced_af2p, reduced_acc_cov, af1p[:,variable_sites])
+            else:
+                print "no variable sites"
+                return_args = (None, None, None, None)
+            del acc, af1p
+            gc.collect()
         return return_args
 
     def fragment_depth(self, coordinates, var_min = 0.03, cov_min = 100, min_points = 5, pseudo_counts = 3):
@@ -177,8 +183,8 @@ class SamplePat(pd.Series):
                 junction[0], junction[1] = None, None
 
         # calculate overlap variances
-        neff_overlaps = [1.0/np.mean(1.0/np.concatenate([4*x*(1-x)/y**2, 
-                                     self.get_n_templates_dilutions()*np.ones(pseudo_counts)]))
+        neff_overlaps = [1.0/np.mean(np.concatenate([0.5*y**2/(x*(1-x)), 
+                                     np.ones(pseudo_counts, dtype=float)/self.get_n_templates_dilutions()]))
                          if x is not None else None for x,y in overlap_frequencies]
 
         # split into chains

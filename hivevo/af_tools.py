@@ -35,6 +35,7 @@ def LD(af2p, af1p, cov, cov_min = 100):
     for ii, nuci in enumerate(pi):
         p12[ii,:] = af2p[nuci][(pi,ii*ind2,ind1)]
     p12.mask = cov<cov_min
+    np.fill_diagonal(p12.mask, True)
     p1p2 = np.outer(p,p)
     p1q1p2q2 = np.outer(p*q,p*q)
     p1q2 = np.outer(p,q)
@@ -49,5 +50,5 @@ def LD(af2p, af1p, cov, cov_min = 100):
     np.fill_diagonal(LD,0)
     np.fill_diagonal(Dp,0)
 
-    return LD, Dp
+    return LD, Dp, p12
 
