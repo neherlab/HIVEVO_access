@@ -205,6 +205,17 @@ class Patient(pd.Series):
         return np.array([divergence(x,region_initial_indices) for x in aft])
 
     def map_to_external_reference(self, roi, refname='HXB2', in_patient = True):
+        '''
+        return a map of positions in the patient to a reference genomewide
+        parameters:
+            roi  --  region of interest given as a string or a tuple (start, end)
+            refname --  reference to compare to
+            in_patient -- specifies whether the (start, end) refers to reference or patient coordinates
+        returns:
+            a (len(roi), 3) array with reference coordinates in first column, 
+                                        patient coordinates in second 
+                                        roi coordinates in third column
+        '''
         from hivwholeseq.patients.filenames import get_coordinate_map_filename
         genomewide_map = np.loadtxt(get_coordinate_map_filename(self.name, 'genomewide', refname=refname), dtype = int)
         if roi in self.annotation:
