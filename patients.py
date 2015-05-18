@@ -11,6 +11,10 @@ from samples import *
 from af_tools import *
 from Bio import SeqIO
 from hivwholeseq.utils.sequence import alpha, alphaa
+import hivwholeseq.patients.filenames as hivevo_filenames
+from hivwholeseq.sequencing.filenames import table_filename
+
+
 # Classes
 class Patient(pd.Series):
     '''
@@ -43,7 +47,6 @@ class Patient(pd.Series):
 
     @classmethod
     def load(cls, pname):
-        from hivwholeseq.sequencing.filenames import table_filename
         patients = pd.read_excel(table_filename, 'Patients', index_col=1)
         patients.index = pd.Index(map(str, patients.index))
         if pname in patients.index:
@@ -108,7 +111,7 @@ class Patient(pd.Series):
         return self.samples[0]
 
     def load_reference(self):
-        from hivwholeseq.patients.filenames import get_initial_reference_filename
+        from hivevo_filenames import get_initial_reference_filename
         return SeqIO.read(get_initial_reference_filename(self.name, "genomewide", format='gb'), 'gb')
 
     def _region_to_indices(self,region):
@@ -224,7 +227,7 @@ class Patient(pd.Series):
                                         patient coordinates in second 
                                         roi coordinates in third column
         '''
-        from hivwholeseq.patients.filenames import get_coordinate_map_filename
+        from hivevo_filenames import get_coordinate_map_filename
         genomewide_map = np.loadtxt(get_coordinate_map_filename(self.name, 'genomewide', refname=refname), dtype = int)
         if roi in self.annotation:
             roi_pos = np.array([x for x in self.annotation[roi]], dtype = int)
