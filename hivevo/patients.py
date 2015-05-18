@@ -13,7 +13,12 @@ from Bio import SeqIO
 from hivwholeseq.utils.sequence import alpha, alphaa
 # Classes
 class Patient(pd.Series):
-    '''HIV patient'''
+    '''
+    Class providing access to longitudinal sequencing data of HIV-1 populations
+    in participants of the HIVEVO study. The class contains time-ordered samples
+    and access methods to single nucleotide variants, pair frequencies, and genomic
+    features of the the HIV poputions
+    '''
 
     def __init__(self, *args, **kwargs):
         '''Initialize a patient with all his samples'''
@@ -32,6 +37,7 @@ class Patient(pd.Series):
         self._n_templates_dilutions = np.ma.masked_invalid([x.get_n_templates_dilutions() for x in self.samples])
         self._times = []
         self.reference = self.load_reference()
+        # translate genbank encoded sequence features into a dictionary
         self.annotation = {x.qualifiers['note'][-1]:x for x in self.reference.features}
         self._initial_consensus_noinsertions()
 
@@ -106,6 +112,7 @@ class Patient(pd.Series):
         return SeqIO.read(get_initial_reference_filename(self.name, "genomewide", format='gb'), 'gb')
 
     def _region_to_indices(self,region):
+        '''returns a list of positions corresponding to a genomic region'''
         if region=='genomewide':
             return np.arange(len(self.reference))
         elif region in self.annotation:
@@ -117,7 +124,9 @@ class Patient(pd.Series):
         '''
         returns coordinates of a region specified in the annotation
         in terms of the fragments F1 to F5. This is needed to extract 
-        region specific allele counts, frequencies etc
+        region specific allele counts, frequencies etc.
+        returns a dict containing 'length', 'start' (of the region in the genome)
+        and for each fragment involved 'F1': (indices in the region of interest, indices on the fragment)
         '''
         coordinates = {}
         region_indices = self._region_to_indices(anno)
@@ -206,7 +215,7 @@ class Patient(pd.Series):
     def map_to_external_reference(self, roi, refname='HXB2', in_patient = True):
         '''
         return a map of positions in the patient to a reference genomewide
-        parameters:
+        Args:
             roi  --  region of interest given as a string or a tuple (start, end)
             refname --  reference to compare to
             in_patient -- specifies whether the (start, end) refers to reference or patient coordinates
@@ -233,6 +242,7 @@ class Patient(pd.Series):
             except:
                 raise ValueError("ROI not understood")
 
+    # TODO: the following is experimental. was meant as a way to easily get an idea what kind of stuff a site is involved in
     def positions_to_features(self):
         '''
         map of positions to features, including the number of proteins, RNA, etc this pos is part of
