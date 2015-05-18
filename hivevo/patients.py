@@ -154,7 +154,6 @@ class Patient(pd.Series):
         coordinates = self._annotation_to_fragment_indices(region)
         act = np.ma.array([tmp_sample.get_allele_counts(coordinates, **kwargs)
                            for tmp_sample in self.samples], hard_mask=True, shrink=False)
-        # set very low frequencies to zero, these are likely sequencing errors
         return act
 
     def get_allele_frequency_trajectories(self, region, safe=False,error_rate = 2e-3,  **kwargs):
