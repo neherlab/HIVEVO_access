@@ -15,17 +15,17 @@ from itertools import izip
 
 all_fragments = ['F'+str(i) for i in range(1,7)]
 # Classes
-class SamplePat(pd.Series):
+class Sample(pd.Series):
     '''Patient sample'''
 
     def __init__(self, *args, **kwargs):
         '''Initialize a patient sample'''
-        super(SamplePat, self).__init__(*args, **kwargs)
+        super(Sample, self).__init__(*args, **kwargs)
         self._sequenced_samples = None
 
     @property
     def _constructor(self):
-        return SamplePat
+        return Sample
 
     def get_n_templates_dilutions(self):
         '''Get the time course of the number of templates to PCR, limiting depth'''
@@ -256,5 +256,5 @@ def load_samples_sequenced(patients=None, include_wrong=False, include_cell=Fals
     if patients is not None:
         sample_table = sample_table.loc[sample_table.loc[:, 'patient'].isin(patients)]
 
-    return [SamplePat(val) for x, val in sample_table.iterrows()]
+    return [Sample(val) for x, val in sample_table.iterrows()]
 
