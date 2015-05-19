@@ -28,7 +28,7 @@ class Patient(pd.Series):
         '''Initialize a patient with all his samples'''
         include_cell = kwargs.pop('include_cell', False)
         super(Patient, self).__init__(*args, **kwargs)
-        self.samples = sorted(load_samples_sequenced(patients=[self.name], include_cell=include_cell), 
+        self.samples = sorted(load_samples_sequenced(patients=[self.name]), 
                               key = lambda x:x.date)
         self._dates = [x.date for x in self.samples]
         self._cd4 = [x['CD4+ count'] for x in self.samples]
