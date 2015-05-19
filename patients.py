@@ -111,8 +111,7 @@ class Patient(pd.Series):
         return self.samples[0]
 
     def load_reference(self):
-        from hivevo_filenames import get_initial_reference_filename
-        return SeqIO.read(get_initial_reference_filename(self.name, "genomewide", format='gb'), 'gb')
+        return SeqIO.read(hivevo_filenames.get_initial_reference_filename(self.name, "genomewide", format='gb'), 'gb')
 
     def _region_to_indices(self,region):
         '''returns a list of positions corresponding to a genomic region'''
@@ -227,8 +226,7 @@ class Patient(pd.Series):
                                         patient coordinates in second 
                                         roi coordinates in third column
         '''
-        from hivevo_filenames import get_coordinate_map_filename
-        genomewide_map = np.loadtxt(get_coordinate_map_filename(self.name, 'genomewide', refname=refname), dtype = int)
+        genomewide_map = np.loadtxt(hivevo_filenames.get_coordinate_map_filename(self.name, 'genomewide', refname=refname), dtype = int)
         if roi in self.annotation:
             roi_pos = np.array([x for x in self.annotation[roi]], dtype = int)
             ind = np.in1d(genomewide_map[:,1], roi_pos)
