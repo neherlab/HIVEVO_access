@@ -281,26 +281,25 @@ class Sample(pd.Series):
         return haps
 
 # Functions
-def load_samples_sequenced(patients=None, include_wrong=False, include_cell=False):
+def load_samples_sequenced(patients=None, include_empty=False):
     '''Load patient samples sequenced from general table'''
     sample_table = pd.read_excel(table_filename, 'Samples timeline sequenced',
                                  index_col=0)
 
+    # Reindex DataFrame
     sample_table.index = pd.Index(map(str, sample_table.index))
     sample_table.loc[:, 'patient'] = map(str, sample_table.loc[:, 'patient'])
+
     # Note: this refers to the TOTAL # of templates, i.e. the factor 2x for
     # the two parallel RT-PCR reactions
     sample_table['n templates'] = sample_table['viral load'] * 0.4 / 12 * 2
 
-    if not include_wrong:
-        sample_table = sample_table.loc[sample_table.loc[:, 'wrong'] != 'x']
-        del sample_table['wrong']
-
-    if not include_cell:
-        sample_table = sample_table.loc[sample_table.loc[:, 'sample type'] == 'RNA']
+    if not include_empty:
+        ind = [i for i, sample in sample_table.iterrows()
+               if (sample[['F1', 'F2', 'F3', 'F4', 'F5', 'F6']] != 'miss').any()]
+        sample_table = sample_table.loc[ind]
 
     if patients is not None:
         sample_table = sample_table.loc[sample_table.loc[:, 'patient'].isin(patients)]
 
     return [Sample(val) for x, val in sample_table.iterrows()]
-
