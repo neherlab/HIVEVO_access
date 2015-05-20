@@ -6,7 +6,8 @@ content:    Data access module HIV patients.
 '''
 # Modules
 import numpy as np
-from hivwholeseq.utils.sequence import alpha, alphaa
+from .sequence import alpha, alphaa
+
 
 def diversity(af):
     return np.mean(af.sum(axis=0)) - np.mean(np.sum(af**2, axis=0))

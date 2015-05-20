@@ -7,10 +7,10 @@ content:    Data access module HIV patients.
 # Modules
 import numpy as np
 import pandas as pd
+from Bio import SeqIO
 from .samples import *
 from .af_tools import *
-from Bio import SeqIO
-from hivwholeseq.utils.sequence import alpha, alphaa
+from .sequence import alpha, alphaa
 
 
 
