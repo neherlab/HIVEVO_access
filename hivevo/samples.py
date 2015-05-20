@@ -7,14 +7,14 @@ content:    Description module for HIV patient samples.
 # Modules
 import numpy as np
 import pandas as pd
-import sys,os
-sys.path.append('/ebio/ag-neher/share/users/rneher/mapping')
-from hivwholeseq.sequencing.filenames import table_filename
-import hivwholeseq.patients.filenames as hivevo_filenames
+import os
+import sys
 from collections import defaultdict
 from itertools import izip
 
 all_fragments = ['F'+str(i) for i in range(1,7)]
+
+
 # Classes
 class Sample(pd.Series):
     '''
@@ -78,11 +78,13 @@ class Sample(pd.Series):
         '''
         if VERBOSE >= 1:
             print 'Getting allele counts:', self.patient, self.name, fragment
+
+        from .filenames import get_allele_counts_filename
     
         # FIXME: add depth min
         # PCR1 filter here
-        fn1 = hivevo_filenames.get_allele_counts_filename(self.patient, self.name, fragment, PCR=1)
-        fn2 = hivevo_filenames.get_allele_counts_filename(self.patient, self.name, fragment, PCR=2)
+        fn1 = get_allele_counts_filename(self.patient, self.name, fragment, PCR=1)
+        fn2 = get_allele_counts_filename(self.patient, self.name, fragment, PCR=2)
         if os.path.isfile(fn1):
             fname = fn1
             if VERBOSE >= 3:
@@ -252,7 +254,9 @@ class Sample(pd.Series):
     # TODO: the following doesn't work 
     def haplotypes(self, fragment, start, stop, VERBOSE=0, maxreads=-1, filters=None, PCR=1):
         from hivwholeseq.patients.get_local_haplotypes import get_local_haplotypes
-        bam_fname = hivevo_filenames.get_mapped_filtered_filename(self.patient, self.name, fragment, type='bam', PCR=PCR, decontaminated=True)
+        from .filenames import get_mapped_filtered_filename
+
+        bam_fname = get_mapped_filtered_filename(self.patient, self.name, fragment, type='bam', PCR=PCR, decontaminated=True)
         try:
             return get_local_haplotypes(bam_fname, start, stop)
         except:
@@ -281,6 +285,7 @@ class Sample(pd.Series):
 # Functions
 def load_samples_sequenced(patients=None, include_empty=False):
     '''Load patient samples sequenced from general table'''
+    from .filenames import table_filename
     sample_table = pd.read_excel(table_filename, 'Samples timeline sequenced',
                                  index_col=0)
 

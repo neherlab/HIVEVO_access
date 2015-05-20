@@ -7,12 +7,11 @@ content:    Data access module HIV patients.
 # Modules
 import numpy as np
 import pandas as pd
-from samples import *
-from af_tools import *
+from .samples import *
+from .af_tools import *
 from Bio import SeqIO
 from hivwholeseq.utils.sequence import alpha, alphaa
-import hivwholeseq.patients.filenames as hivevo_filenames
-from hivwholeseq.sequencing.filenames import table_filename
+
 
 
 # Classes
@@ -47,6 +46,7 @@ class Patient(pd.Series):
 
     @classmethod
     def load(cls, pname):
+        from .filenames import table_filename
         patients = pd.read_excel(table_filename, 'Patients', index_col=1)
         patients.index = pd.Index(map(str, patients.index))
         if pname in patients.index:
@@ -111,7 +111,8 @@ class Patient(pd.Series):
         return self.samples[0]
 
     def load_reference(self):
-        return SeqIO.read(hivevo_filenames.get_initial_reference_filename(self.name, "genomewide", format='gb'), 'gb')
+        from .filenames import get_initial_reference_filename
+        return SeqIO.read(get_initial_reference_filename(self.name, "genomewide", format='gb'), 'gb')
 
     def _region_to_indices(self,region):
         '''returns a list of positions corresponding to a genomic region'''
@@ -226,7 +227,8 @@ class Patient(pd.Series):
                                         patient coordinates in second 
                                         roi coordinates in third column
         '''
-        genomewide_map = np.loadtxt(hivevo_filenames.get_coordinate_map_filename(self.name, 'genomewide', refname=refname), dtype = int)
+        from .filenames import get_coordinate_map_filename
+        genomewide_map = np.loadtxt(get_coordinate_map_filename(self.name, 'genomewide', refname=refname), dtype = int)
         if roi in self.annotation:
             roi_pos = np.array([x for x in self.annotation[roi]], dtype = int)
             ind = np.in1d(genomewide_map[:,1], roi_pos)
@@ -273,8 +275,3 @@ class Patient(pd.Series):
             for si in xrange(len(self.samples)):
                 depth[si] = np.minimum(depth[si], self.n_templates_dilutions[si])
         return depth
-
-if __name__=="__main__":
-    from matplotlib import pyplot as plt
-    plt.ion()
-    p = Patient.load('20097')
