@@ -196,27 +196,29 @@ class Patient(pd.Series):
     def get_syn_mutations(self, region, mask_constrained = True):
         from itertools import izip
         if region in self.annotation and self.annotation[region].type in ['gene', 'protein']:
-            aft = self.get_allele_frequency_trajectories(region)
-            aft_valid = -np.array([af.mask.sum(axis=0) for af in aft], dtype=bool)
-            consensi = [consensus(af) for af in aft]
-            cons_aa = np.array([np.fromstring(Seq.translate(''.join(cons)), dtype='|S1') for cons in consensi])
-            no_substitution = np.repeat(np.array([len(np.unique(col[ind]))==1 for ind, col in izip(aft_valid.T[::3], cons_aa.T)], dtype=bool), 3)
+            try:
+                aft = self.get_allele_frequency_trajectories(region)
+                aft_valid = -np.array([af.mask.sum(axis=0) for af in aft], dtype=bool)
+                consensi = [consensus(af) for af in aft]
+                cons_aa = np.array([np.fromstring(Seq.translate(''.join(cons)), dtype='|S1') for cons in consensi])
+                no_substitution = np.repeat(np.array([len(np.unique(col[ind]))==1 for ind, col in izip(aft_valid.T[::3], cons_aa.T)], dtype=bool), 3)
 
-            syn_muts = np.zeros(aft.shape[1:], dtype=bool)
-            for pos in xrange(aft.shape[-1]):
-                ci = pos//3
-                rf = pos%3
-                codon = ''.join(consensi[0][ci*3:(ci+1)*3])
-                for ni,nuc in enumerate(alpha[:4]):
-                    mod_codon = codon[:rf] + nuc + codon[rf+1:]
-                    print codon, mod_codon, ci, rf, nuc, Seq.translate(codon), Seq.translate(mod_codon), no_substitution[pos]
-                    try:
-                        syn_muts[ni,pos] = (Seq.translate(codon)==Seq.translate(mod_codon))*no_substitution[pos]
-                    except:
-                        syn_muts[ni,pos] = False
-            if mask_constrained:
-                syn_muts[:,self.get_constrained(region)] = False
-            return syn_muts
+                syn_muts = np.zeros(aft.shape[1:], dtype=bool)
+                for pos in xrange(aft.shape[-1]):
+                    ci = pos//3
+                    rf = pos%3
+                    codon = ''.join(consensi[0][ci*3:(ci+1)*3])
+                    for ni,nuc in enumerate(alpha[:4]):
+                        mod_codon = codon[:rf] + nuc + codon[rf+1:]
+                        try:
+                            syn_muts[ni,pos] = (Seq.translate(codon)==Seq.translate(mod_codon))*no_substitution[pos]
+                        except:
+                            syn_muts[ni,pos] = False
+                if mask_constrained:
+                    syn_muts[:,self.get_constrained(region)] = False
+                return syn_muts
+            except:
+                import pdb; pdb.set_trace()
         else:
             print region,"is not a valid protein or gene"
             return None
