@@ -244,6 +244,19 @@ class Patient(pd.Series):
         self.initial_indices = cons_ind
         self.initial_sequence = alpha[cons_ind]
 
+    def get_initial_indices(self, region):
+        if region in self.annotation:
+            return np.array([self.initial_indices[pos] for pos in self.annotation[region]])
+        else:
+            print "Not a valid annotation:",region
+            return None
+    def get_initial_sequence(self, region):
+        tmp_ind = self.get_initial_indices(region)
+        if tmp_ind is not None:
+            return alpha[tmp_ind]
+        else:
+            return None
+
     def get_diversity(self, region):
         aft = self.get_allele_frequency_trajectories(region)
         return np.array(map(diversity, aft))
