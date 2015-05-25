@@ -7,7 +7,7 @@ content:    Data access module HIV patients.
 # Modules
 import numpy as np
 import pandas as pd
-from Bio import SeqIO
+from Bio import SeqIO,Seq
 from .samples import *
 from .af_tools import *
 from .sequence import alpha, alphaa
@@ -43,6 +43,7 @@ class Patient(pd.Series):
         # translate genbank encoded sequence features into a dictionary
         self.annotation = {x.qualifiers['note'][-1]:x for x in self.reference.features}
         self._initial_consensus_noinsertions()
+        self.positions_to_features()
 
     @classmethod
     def load(cls, pname):
@@ -183,6 +184,37 @@ class Patient(pd.Series):
         # set very low frequencies to zero, these are likely sequencing errors
         aft[aft<error_rate]=0
         return aft
+
+    def get_syn_mutations(self, region, mask_constrained = True):
+        from itertools import izip
+        if region in self.annotation and self.annotation[region].type in ['gene', 'protein']:
+            aft = self.get_allele_frequency_trajectories(region)
+            aft_valid = -np.array([af.mask.sum(axis=0) for af in aft], dtype=bool)
+            consensi = [consensus(af) for af in aft]
+            cons_aa = np.array([np.fromstring(Seq.translate(''.join(cons)), dtype='|S1') for cons in consensi])
+            no_substitution = np.repeat(np.array([len(np.unique(col[ind]))==1 for ind, col in izip(aft_valid.T[::3], cons_aa.T)], dtype=bool), 3)
+
+            syn_muts = np.zeros(aft.shape[1:], dtype=bool)
+            for pos in xrange(aft.shape[-1]):
+                ci = pos//3
+                rf = pos%3
+                codon = ''.join(consensi[0][ci*3:(ci+1)*3])
+                for ni,nuc in enumerate(alpha[:4]):
+                    mod_codon = codon[:rf] + nuc + codon[rf+1:]
+                    print codon, mod_codon, ci, rf, nuc, Seq.translate(codon), Seq.translate(mod_codon), no_substitution[pos]
+                    try:
+                        syn_muts[ni,pos] = (Seq.translate(codon)==Seq.translate(mod_codon))*no_substitution[pos]
+                    except:
+                        syn_muts[ni,pos] = False
+            nonsyn_muts = np.zeros_like(syn_muts)
+            if mask_constrained:
+                for pi,pos in enumerate(self.annotation[region]):
+                    if self.pos_to_feature[pos]['RNA']>0 or self.pos_to_feature[pos]['gene']>1:
+                        syn_muts[:,pi] = False
+            return syn_muts
+        else:
+            print region,"is not a valid protein or gene"
+            return None
 
     def _initial_consensus_noinsertions(self, VERBOSE=0, return_ind=False):
         '''Make initial consensus from allele frequencies, keep coordinates and masked
