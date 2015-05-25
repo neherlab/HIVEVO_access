@@ -184,6 +184,7 @@ class Patient(pd.Series):
         # set very low frequencies to zero, these are likely sequencing errors
         aft[aft<error_rate]=0
         return aft
+
     def get_constrained(self, region):
         if region in self.annotation and self.annotation[region].type in ['gene', 'protein']:
             return np.array([self.pos_to_feature[pos]['RNA']>0 \
@@ -192,6 +193,14 @@ class Patient(pd.Series):
         else:
             print region,"is not a valid protein or gene"
             return None
+
+    def get_gaps_by_codon(self, aft):
+        gap_index = 4
+        gaps = np.zeros(aft.shape[-1],dtype=bool)
+        for ci in range(0, aft.shape[-1],3):
+            if np.any(aft[:,gap_index,ci:ci+3]>0.1):
+                gaps[ci:ci+3]=True
+        return gaps
 
     def get_syn_mutations(self, region, mask_constrained = True):
         from itertools import izip
@@ -202,7 +211,13 @@ class Patient(pd.Series):
                     aft_valid = np.ones((aft.shape[0], aft.shape[-1]), dtype=bool)
                 else:
                     aft_valid = -np.array([af.mask.sum(axis=0) for af in aft], dtype=bool)
-                consensi = [consensus(af) for af in aft]
+                gaps = self.get_gaps_by_codon(aft)
+                consensi = []
+                for af in aft:
+                    tmp = consensus(af)
+                    tmp[gaps]='N'
+                    consensi.append(tmp)
+
                 cons_aa = np.array([np.fromstring(Seq.translate(''.join(cons)), dtype='|S1') for cons in consensi])
                 no_substitution = np.repeat(np.array([len(np.unique(col[ind]))==1 for ind, col in izip(aft_valid.T[::3], cons_aa.T)], dtype=bool), 3)
 
