@@ -184,6 +184,14 @@ class Patient(pd.Series):
         # set very low frequencies to zero, these are likely sequencing errors
         aft[aft<error_rate]=0
         return aft
+    def get_constrained(self, region):
+        if region in self.annotation and self.annotation[region].type in ['gene', 'protein']:
+            return np.array([self.pos_to_feature[pos]['RNA']>0 \
+                        or self.pos_to_feature[pos]['gene']>1
+                        for pos in self.annotation[region]])
+        else:
+            print region,"is not a valid protein or gene"
+            return None
 
     def get_syn_mutations(self, region, mask_constrained = True):
         from itertools import izip
@@ -206,11 +214,8 @@ class Patient(pd.Series):
                         syn_muts[ni,pos] = (Seq.translate(codon)==Seq.translate(mod_codon))*no_substitution[pos]
                     except:
                         syn_muts[ni,pos] = False
-            nonsyn_muts = np.zeros_like(syn_muts)
             if mask_constrained:
-                for pi,pos in enumerate(self.annotation[region]):
-                    if self.pos_to_feature[pos]['RNA']>0 or self.pos_to_feature[pos]['gene']>1:
-                        syn_muts[:,pi] = False
+                syn_muts[:,self.get_constrained(region)] = False
             return syn_muts
         else:
             print region,"is not a valid protein or gene"
