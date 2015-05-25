@@ -42,7 +42,7 @@ def LD(af2p, af1p, cov, cov_min = 100):
     p1q2 = np.outer(p,q)
 
     D = p12 - p1p2
-    LD = np.sqrt(D**2/(1e-10+p1q1p2q2))
+    LD = D**2/(1e-10+p1q1p2q2)
 
     Dp = D
     Dp[Dp>0] /= np.minimum(p1q2, p1q2.T)[Dp>0]
