@@ -198,7 +198,10 @@ class Patient(pd.Series):
         if region in self.annotation and self.annotation[region].type in ['gene', 'protein']:
             try:
                 aft = self.get_allele_frequency_trajectories(region)
-                aft_valid = -np.array([af.mask.sum(axis=0) for af in aft], dtype=bool)
+                if aft.mask == False:
+                    aft_valid = np.ones((aft.shape[0], aft.shape[-1]), dtype=bool)
+                else:
+                    aft_valid = -np.array([af.mask.sum(axis=0) for af in aft], dtype=bool)
                 consensi = [consensus(af) for af in aft]
                 cons_aa = np.array([np.fromstring(Seq.translate(''.join(cons)), dtype='|S1') for cons in consensi])
                 no_substitution = np.repeat(np.array([len(np.unique(col[ind]))==1 for ind, col in izip(aft_valid.T[::3], cons_aa.T)], dtype=bool), 3)
