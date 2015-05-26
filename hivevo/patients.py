@@ -212,6 +212,7 @@ class Patient(pd.Series):
                 else:
                     aft_valid = -np.array([af.mask.sum(axis=0) for af in aft], dtype=bool)
                 gaps = self.get_gaps_by_codon(aft)
+                initial_seq = self.get_initial_sequence(region)
                 consensi = []
                 for af in aft:
                     tmp = consensus(af)
@@ -227,7 +228,7 @@ class Patient(pd.Series):
                 for pos in xrange(aft.shape[-1]):
                     ci = pos//3
                     rf = pos%3
-                    codon = ''.join(consensi[0][ci*3:(ci+1)*3])
+                    codon = ''.join(initial_sequence[ci*3:(ci+1)*3])
                     for ni,nuc in enumerate(alpha[:4]):
                         mod_codon = codon[:rf] + nuc + codon[rf+1:]
                         try:
