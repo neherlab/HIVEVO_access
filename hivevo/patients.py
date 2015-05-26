@@ -228,7 +228,7 @@ class Patient(pd.Series):
                 for pos in xrange(aft.shape[-1]):
                     ci = pos//3
                     rf = pos%3
-                    codon = ''.join(initial_sequence[ci*3:(ci+1)*3])
+                    codon = ''.join(initial_seq[ci*3:(ci+1)*3])
                     for ni,nuc in enumerate(alpha[:4]):
                         mod_codon = codon[:rf] + nuc + codon[rf+1:]
                         try:
