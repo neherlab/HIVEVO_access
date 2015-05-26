@@ -21,7 +21,7 @@ class HIVreference(object):
         self.aln = np.array(AlignIO.read(get_subtype_alignment_filename(subtype='B'), 'fasta'))
         self.calc_nucleotide_frequencies()
         self._consensus_indices = np.argmax(self.af, axis=0)
-        self._consensus = alpha(self._consensus_indices)
+        self._consensus = alpha[self._consensus_indices]
         self.calc_entropy()
 
     def calc_nucleotide_frequencies(self):
