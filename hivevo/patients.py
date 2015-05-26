@@ -194,12 +194,12 @@ class Patient(pd.Series):
             print region,"is not a valid protein or gene"
             return None
 
-    def get_gaps_by_codon(self, aft):
+    def get_gaps_by_codon(self, aft, pad=0, threshold = 0.1):
         gap_index = 4
         gaps = np.zeros(aft.shape[-1],dtype=bool)
         for ci in range(0, aft.shape[-1],3):
-            if np.any(aft[:,gap_index,ci:ci+3]>0.1):
-                gaps[ci:ci+3]=True
+            if np.any(aft[:,gap_index,ci:ci+3]>threshold):
+                gaps[max(0,ci-3*pad):ci+3*(1+pad)]=True
         return gaps
 
     def get_syn_mutations(self, region, mask_constrained = True):
@@ -218,8 +218,10 @@ class Patient(pd.Series):
                     tmp[gaps]='N'
                     consensi.append(tmp)
 
-                cons_aa = np.array([np.fromstring(Seq.translate(''.join(cons)), dtype='|S1') for cons in consensi])
-                no_substitution = np.repeat(np.array([len(np.unique(col[ind]))==1 for ind, col in izip(aft_valid.T[::3], cons_aa.T)], dtype=bool), 3)
+                cons_aa = np.array([np.fromstring(Seq.translate(''.join(cons)), 
+                                   dtype='|S1') for cons in consensi])
+                no_substitution = np.repeat(np.array([len(np.unique(col[ind]))==1 
+                                for ind, col in izip(aft_valid.T[::3], cons_aa.T)], dtype=bool), 3)
 
                 syn_muts = np.zeros(aft.shape[1:], dtype=bool)
                 for pos in xrange(aft.shape[-1]):
@@ -229,7 +231,8 @@ class Patient(pd.Series):
                     for ni,nuc in enumerate(alpha[:4]):
                         mod_codon = codon[:rf] + nuc + codon[rf+1:]
                         try:
-                            syn_muts[ni,pos] = (Seq.translate(codon)==Seq.translate(mod_codon))*no_substitution[pos]
+                            syn_muts[ni,pos] = (Seq.translate(codon)==Seq.translate(mod_codon))\
+                                                *no_substitution[pos]
                         except:
                             syn_muts[ni,pos] = False
                 if mask_constrained:
