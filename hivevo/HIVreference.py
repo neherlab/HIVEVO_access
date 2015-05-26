@@ -54,4 +54,42 @@ class HIVreference(object):
         return {i: {'range':(thresholds[i],thresholds[i+1]), 
                     'ind':np.where((self.entropy>=thresholds[i])*(self.entropy<thresholds[i+1]))[0]}
                for i in range(q)}
-        
+
+    def get_entropy_in_patient_region(self, map_to_ref):
+        '''
+        returns entropy in a specific regions defined by a set of indices in the reference
+        params:
+        map_to_ref  --  either a one dimensional vector specifying indices in the reference
+                        or a (3, len(region)) array with the reference coordinates in the first column
+                        this is the output of Patient.map_to_external_reference
+        '''
+        if len(map_to_ref.shape)==2:
+            return self.entropy[map_to_ref[:,0]]
+        elif len(map_to_ref.shape)==1:
+            return self.entropy[map_to_ref]
+
+    def get_consensus_in_patient_region(self, map_to_ref):
+        '''
+        returns consensus in a specific regions defined by a set of indices in the reference
+        params:
+        map_to_ref  --  either a one dimensional vector specifying indices in the reference
+                        or a (3, len(region)) array with the reference coordinates in the first column
+                        this is the output of Patient.map_to_external_reference
+        '''
+        if len(map_to_ref.shape)==2:
+            return self.consensus[map_to_ref[:,0]]
+        elif len(map_to_ref.shape)==1:
+            return self.consensus[map_to_ref]
+
+    def get_consensus_indices_in_patient_region(self, map_to_ref):
+        '''
+        returns consensus_indices in a specific regions defined by a set of indices in the reference
+        params:
+        map_to_ref  --  either a one dimensional vector specifying indices in the reference
+                        or a (3, len(region)) array with the reference coordinates in the first column
+                        this is the output of Patient.map_to_external_reference
+        '''
+        if len(map_to_ref.shape)==2:
+            return self.consensus_indices[map_to_ref[:,0]]
+        elif len(map_to_ref.shape)==1:
+            return self.consensus_indices[map_to_ref]
