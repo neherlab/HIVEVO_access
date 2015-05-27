@@ -8,7 +8,7 @@ content:    Data access module HIV patients.
 import numpy as np
 import pandas as pd
 from Bio import SeqIO, AlignIO
-from .filenames import get_custom_reference_filename, get_subtype_alignment_filename
+from .filenames import get_custom_reference_filename, get_subtype_reference_alignment_filename
 from .sequence import alpha
 
 class HIVreference(object):
