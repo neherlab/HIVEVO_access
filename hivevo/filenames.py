@@ -44,4 +44,4 @@ def get_custom_reference_filename(reference, format='fasta'):
 def get_subtype_reference_alignment_filename(subtype='B', format='fasta', refname='HXB2'):
     '''Get the filename of a reference alignment'''
     filename = 'genomewide.'+subtype+'.nuc.aligned.'+format
-    return reference_folder+'reference/alignments/pairwise_to_'+refname+'/'+filename
+    return reference_folder+'alignments/pairwise_to_'+refname+'/'+filename
