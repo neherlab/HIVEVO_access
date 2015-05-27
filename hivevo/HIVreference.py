@@ -13,9 +13,9 @@ from .sequence import alpha
 
 class HIVreference(object):
     """docstring for HIVreference"""
-    def __init__(self, ref_name='HXB2'):
-        self.ref_name = ref_name
-        self.seq = SeqIO.read(get_custom_reference_filename('HXB2', format = 'gb'), format='genbank')
+    def __init__(self, refname='HXB2'):
+        self.refname = refname
+        self.seq = SeqIO.read(get_custom_reference_filename(self.refname, format = 'gb'), format='genbank')
         # translate genbank encoded sequence features into a dictionary
         self.annotation = {x.qualifiers['note'][-1]:x for x in self.seq.features}
         self.aln = np.array(AlignIO.read(get_subtype_alignment_filename(subtype='B'), 'fasta'))
@@ -48,6 +48,9 @@ class HIVreference(object):
     def consensus_indices(self):
         return self._consensus_indices
         
+    def get_ungapped(self, threshold = 0.05):
+        return self.af[-1,:]<0.05
+
     def get_entropy_quantiles(self, q):
         from scipy.stats import scoreatpercentile
         thresholds = [scoreatpercentile(self.entropy, 100.0*i/q) for i in range(q+1)]
