@@ -285,8 +285,9 @@ class Sample(pd.Series):
 # Functions
 def load_samples_sequenced(patients=None, include_empty=False):
     '''Load patient samples sequenced from general table'''
-    from .filenames import table_filename
-    sample_table = pd.read_excel(table_filename, 'Samples timeline sequenced',
+    from .filenames import get_table_filename
+    sample_table = pd.read_excel(get_table_filename('samples'),
+                                 'Samples',
                                  index_col=0)
 
     # Reindex DataFrame

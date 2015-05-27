@@ -47,8 +47,10 @@ class Patient(pd.Series):
 
     @classmethod
     def load(cls, pname):
-        from .filenames import table_filename
-        patients = pd.read_excel(table_filename, 'Patients', index_col=1)
+        from .filenames import get_table_filename
+        patients = pd.read_excel(get_table_filename('patients'),
+                                 'Patients',
+                                 index_col=0)
         patients.index = pd.Index(map(str, patients.index))
         if pname in patients.index:
             return cls(patients.loc[pname])
