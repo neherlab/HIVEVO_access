@@ -169,6 +169,8 @@ class Patient(pd.Series):
         coordinates = self._annotation_to_fragment_indices(region)
         act = np.ma.array([tmp_sample.get_allele_counts(coordinates, **kwargs)
                            for tmp_sample in self.samples], hard_mask=True, shrink=False)
+        if len(act.mask.shape)<1:
+            act.mask = np.zeros_like(act, dtype=bool)
         return act
 
     def get_allele_frequency_trajectories(self, region, safe=False,error_rate = 2e-3,  **kwargs):
@@ -185,6 +187,8 @@ class Patient(pd.Series):
                           for tmp_sample in self.samples], hard_mask=True, shrink=False)
         # set very low frequencies to zero, these are likely sequencing errors
         aft[aft<error_rate]=0
+        if len(aft.mask.shape)<1:
+            aft.mask = np.zeros_like(aft, dtype=bool)
         return aft
 
     def get_constrained(self, region):
@@ -271,11 +275,14 @@ class Patient(pd.Series):
         self.initial_sequence = alpha[cons_ind]
 
     def get_initial_indices(self, region):
-        if region in self.annotation:
+        if region=='genomewide':
+            return self.initial_indices
+        elif region in self.annotation:
             return np.array([self.initial_indices[pos] for pos in self.annotation[region]])
         else:
             print "Not a valid annotation:",region
             return None
+
     def get_initial_sequence(self, region):
         tmp_ind = self.get_initial_indices(region)
         if tmp_ind is not None:
