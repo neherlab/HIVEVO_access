@@ -296,7 +296,7 @@ class Patient(pd.Series):
         region_initial_indices = self.initial_indices[self._region_to_indices(region)]
         return np.array([divergence(x,region_initial_indices) for x in aft])
 
-    def map_to_external_reference(self, roi, refname='HXB2', in_patient = True):
+    def map_to_external_reference(self, roi, refname='HXB2', in_patient=True):
         '''
         return a map of positions in the patient to a reference genomewide
         Args:
@@ -309,14 +309,18 @@ class Patient(pd.Series):
                                         roi coordinates in third column
         '''
         from .filenames import get_coordinate_map_filename
-        genomewide_map = np.loadtxt(get_coordinate_map_filename(self.name, 'genomewide', refname=refname), dtype = int)
+        coo_fn = get_coordinate_map_filename(self.name, 'genomewide', refname=refname)
+        genomewide_map = np.loadtxt(coo_fn, dtype=int)
+
         if roi in self.annotation:
             roi_pos = np.array([x for x in self.annotation[roi]], dtype = int)
             ind = np.in1d(genomewide_map[:,1], roi_pos)
             roi_indices = np.in1d(roi_pos, genomewide_map[:,1]).nonzero()[0]
             return np.vstack((genomewide_map[ind].T, [roi_indices])).T
+
         elif roi == "genomewide":
             return np.vstack((genomewide_map.T, [genomewide_map[:,1]])).T            
+        
         else:
             try:
                 start, stop = map(int, roi)
@@ -356,3 +360,134 @@ class Patient(pd.Series):
             for si in xrange(len(self.samples)):
                 depth[si] = np.minimum(depth[si], self.n_templates_dilutions[si])
         return depth
+
+
+    def get_hla_type(self, MHC=1):
+        '''Get a list with all HLA loci
+        
+        Parameters:
+           MHC (None/1/2): MHC class I/II only, or all
+        '''
+        if MHC == 1:
+            loci = ('A', 'B', 'C')
+        elif MHC == 2:
+            loci = ('DRB1', 'DRQ1')
+        else:
+            loci = ('A', 'B', 'C', 'DRB1', 'DRQ1')
+
+        hla = np.concatenate([[locus+self['HLA-'+locus],
+                               locus+self['HLA-'+locus+'-2']]
+                              for locus in loci]).tolist()
+        return hla
+
+
+    def get_ctl_epitopes(self,
+                         regions=['gag', 'pol',
+                                  'gp120', 'gp41',
+                                  'vif', 'vpr', 'vpu', 'nef'],
+                         kind='mhci=80',
+                        ):
+        '''Get list of CTL epitopes
+        
+        Parameters:
+           regions (list): restrict to epitopes within these regions
+           kind (str): LANL/epitoolkit/mhci=<n>, where <n> is the cutoff for
+           the MHCi predicted list: the first <n> entries are taken.
+        '''
+        # Get epitope table for patient HLA
+        if kind == 'LANL':
+            from hivwholeseq.cross_sectional.ctl_epitope_map import (get_ctl_epitope_map,
+                                                           get_ctl_epitope_hla)
+            ctl_table_main = get_ctl_epitope_map(species='human')
+            hla = self.get_hla_type(MHC=1)
+            ctl_table_main = get_ctl_epitope_hla(ctl_table_main, hla)
+            del ctl_table_main['HXB2 start']
+            del ctl_table_main['HXB2 end']
+            del ctl_table_main['HXB2 DNA Contig']
+            del ctl_table_main['Protein']
+            del ctl_table_main['Subprotein']
+
+        elif 'mhci=' in kind:
+            n_entries = int(kind[5:])
+            from .filenames import get_ctl_epitope_map_filename
+            ctl_table_main = pd.read_csv(get_ctl_epitope_map_filename(self.name),
+                                         skiprows=3,
+                                         sep='\t',
+                                         usecols=['peptide'],
+                                         # NOTE: top epitopes only, this is a parameter
+                                         nrows=n_entries,
+                                        )
+            ctl_table_main.drop_duplicates(inplace=True)
+            ctl_table_main.rename(columns={'peptide': 'Epitope'}, inplace=True)
+
+        else:
+            raise ValueError('kind of CTL table not understood')
+
+        data = []
+        for region in regions:
+
+            # Restrict epitope table to founder virus sequence
+            fea = self.annotation[region]
+            regpos = fea.location.nofuzzy_start
+            seq = fea.extract(self.reference)
+            prot = str(seq.seq.translate())
+            ind = [i for i, epi in enumerate(ctl_table_main['Epitope']) if epi in prot]
+            ctl_table = ctl_table_main.iloc[ind].copy()
+
+            # Set position in region
+            # NOTE: the same epitope could be there twice+ in a protein, so we use
+            # regular expressions for that
+            import re
+            tmp = []
+            for epi in ctl_table['Epitope']:
+                for match in re.finditer(epi, prot):
+                    pos = match.start()
+                    tmp.append({'Epitope': epi,
+                                'start_region': 3 * pos,
+                                'end_region': 3 * (pos + len(epi)),
+                               })
+            ctl_table = pd.DataFrame(tmp)
+            if not len(ctl_table):
+                continue
+
+            # Set position genomewide
+            ctl_table['start'] = ctl_table['start_region'] + regpos
+            ctl_table['end'] = ctl_table['end_region'] + regpos
+
+            # Set start/end positions in HXB2 coordinates
+            comap = dict(self.map_to_external_reference(region)[:, ::-2])
+            poss = []
+            for x in ctl_table['start_region']:
+                while True:
+                    if x in comap:
+                        poss.append(comap[x])
+                        break
+                    elif x < 0:
+                        poss.append(-1)
+                        break
+                    x -= 1
+            ctl_table['start_HXB2'] = np.array(poss, int)
+            poss = []
+            for x in ctl_table['end_region']:
+                while True:
+                    if x in comap:
+                        poss.append(comap[x])
+                        break
+                    elif x > 10000:
+                        poss.append(-1)
+                        break
+                    x += 1
+            ctl_table['end_HXB2'] = np.array(poss, int)
+
+            # Filter out epitopes for which we cannot find an HXB2 position
+            ctl_table = ctl_table.loc[(ctl_table[['start_HXB2', 'end_HXB2']] != -1).all(axis=1)]
+
+            ctl_table['region'] = region
+
+            data.append(ctl_table)
+
+        ctl_table = pd.concat(data).sort('start_HXB2')
+        ctl_table.index = range(len(ctl_table))
+
+        return ctl_table
+

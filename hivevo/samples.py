@@ -39,7 +39,8 @@ class Sample(pd.Series):
         # parse the dilutions string expected to be of type 1:100 (1/2), where (1/2) mean one successful
         # amplification out of 2 trials
         if not isinstance(dilstr, basestring):
-            print "expecting a string, got", dilstr, "falling back on viral load /60:", self['viral load']/60.0
+            print (self.name+": Templates from dilutions expecting a string, got", dilstr,
+                   "falling back on viral load /60:", self['viral load']/60.0)
             val = self['viral load']/60.0 
         else:
             try:

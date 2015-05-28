@@ -45,3 +45,10 @@ def get_subtype_reference_alignment_filename(subtype='B', format='fasta', refnam
     '''Get the filename of a reference alignment'''
     filename = 'genomewide.'+subtype+'.nuc.aligned.'+format
     return reference_folder+'reference/alignments/pairwise_to_'+refname+'/'+filename
+
+
+def get_ctl_epitope_map_filename(pcode):
+    '''Get the filename of the CTL epitope predictions from MHCi'''
+    filename = root_data_folder+'CTL/mhci/ctl_'+pcode+'.tsv'
+    return filename
+

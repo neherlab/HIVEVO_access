@@ -17,7 +17,7 @@ class HIVreference(object):
         self.refname = refname
         self.seq = SeqIO.read(get_custom_reference_filename(self.refname, format = 'gb'), format='genbank')
         # translate genbank encoded sequence features into a dictionary
-        self.annotation = {x.qualifiers['note'][-1]:x for x in self.seq.features}
+        self.annotation = {x.qualifiers['note'][-1]: x for x in self.seq.features}
         self.aln = np.array(AlignIO.read(get_subtype_alignment_filename(subtype='B'), 'fasta'))
         self.calc_nucleotide_frequencies()
         self._consensus_indices = np.argmax(self.af, axis=0)
