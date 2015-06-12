@@ -84,6 +84,7 @@ class Sample(pd.Series):
           - nucleotides: fields 'F1': (array(pos in region of interest), array(pos on fragment))
                          a field 'length': total length of the region of interest is required
           - amino acids: fields 'PR': array(pos in region of interest)
+                         if the array is None, all positions are taken
         add          -- if True, add counts when fragments overlap (default), other wise take max
                         this parameter is only used for nucleotides
         cov_min      -- mask values where the final coverage is below that threshold
@@ -128,7 +129,9 @@ class Sample(pd.Series):
             # The dict should have a single protein not the best data structure
             for protein, coord in coordinates.iteritems():
                 fname = get_allele_counts_filename(self.name, protein, type=type)
-                ac = np.load(fname)[:, coord]
+                ac = np.load(fname)
+                if coord is not None:
+                    ac = ac[:, coord]
                 break
 
         else:

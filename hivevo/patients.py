@@ -179,19 +179,28 @@ class Patient(pd.Series):
         return cov
 
 
-    def get_allele_count_trajectories(self, region, safe=False, **kwargs):
+    def get_allele_count_trajectories(self, region, safe=False, type='nuc', **kwargs):
         '''Get the allele count trajectories from files
         
         Args:
           region (str): region to study, a fragment or a genomic feature (e.g. V3)
+          type (str): 'nuc' for nucleotides, 'aa' for amino acids
           **kwargs: passed down to the function (VERBOSE, etc.).
 
         Note: the genomewide counts are currently saved to file.
         '''
-        coordinates = self._annotation_to_fragment_indices(region)
-        act = np.ma.array([tmp_sample.get_allele_counts(coordinates, **kwargs)
-                           for tmp_sample in self.samples], hard_mask=True, shrink=False)
-        if len(act.mask.shape)<1:
+        if type == 'nuc':
+            coordinates = self._annotation_to_fragment_indices(region)
+        elif type == 'aa':
+            coordinates = {region: None}
+        else:
+            raise ValueError('Data type not understood')
+
+        act = np.ma.array([tmp_sample.get_allele_counts(coordinates, type=type, **kwargs)
+                           for tmp_sample in self.samples],
+                          hard_mask=True,
+                          shrink=False)
+        if len(act.mask.shape) < 1:
             act.mask = np.zeros_like(act, dtype=bool)
         return act
 
