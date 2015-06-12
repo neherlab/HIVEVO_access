@@ -45,6 +45,7 @@ class Patient(pd.Series):
         self._initial_consensus_noinsertions()
         self.positions_to_features()
 
+
     @classmethod
     def load(cls, pname):
         from .filenames import get_table_filename
@@ -57,30 +58,43 @@ class Patient(pd.Series):
         else:
             return cls(patients.loc[patients.code == pname].iloc[0])
 
+
     @property
     def _constructor(self):
         return Patient
 
+
     @property
     def transmission_date(self):
         '''The most likely time of transmission'''
-        return self['last negative date'] + (self['first positive date'] - self['last negative date']) / 2
+        return self['infect date best']
+
 
     @property
     def dates(self):
         return self._dates
+
+
     @property
     def viral_load(self):
         return self._viral_load
+
+
     @property
     def cd4(self):
         return self._cd4
+
+
     @property
     def dsi(self):
         return self.times(unit='days')
+
+
     @property
     def msi(self):
         return self.times(unit='month')
+
+
     @property
     def ysi(self):
         return self.times(unit='year')
@@ -88,7 +102,7 @@ class Patient(pd.Series):
     
     def times(self, unit='days'):
         '''Get the times from transmission'''
-        delta_days = [d.toordinal() - self.transmission_date.toordinal() for d in self.dates]
+        delta_days = [float(s['days since infection']) for s in self.samples]
         if unit.startswith('day'):
             return np.array(delta_days, dtype=float)
         elif unit.startswith('year'):
@@ -98,24 +112,29 @@ class Patient(pd.Series):
         else:
             raise ValueError("bad time unit")
 
+
     @property
     def n_templates_dilutions(self):
         '''Get the time course of the number of templates to PCR, limiting depth'''
         return self._n_templates_dilutions
+
 
     @property
     def n_templates_viral_load(self):
         '''Get the number of templates, estimated from the viral load'''
         return self._n_templates_viral_load
 
+
     @property
     def initial_sample(self):
         '''The initial sample used as a mapping reference'''
         return self.samples[0]
 
+
     def load_reference(self):
         from .filenames import get_initial_reference_filename
         return SeqIO.read(get_initial_reference_filename(self.name, "genomewide", format='gb'), 'gb')
+
 
     def _region_to_indices(self,region):
         '''returns a list of positions corresponding to a genomic region'''
@@ -125,6 +144,7 @@ class Patient(pd.Series):
             return np.array([int(x) for x in self.annotation[region]], dtype=int)
         else:
             raise ValueError('no annotation with name '+region)
+
 
     def _annotation_to_fragment_indices(self, anno):
         '''
@@ -151,11 +171,13 @@ class Patient(pd.Series):
             coordinates[anno] = (np.arange(coordinates['length']), np.arange(coordinates['length']))
         return coordinates
 
+
     def get_coverage_trajectories(self, region, **kwargs):
         '''Get coverage as a function of time'''
         coordinates = self._annotation_to_fragment_indices(region)
         cov = np.ma.array([tmp_sample.get_coverage(coordinates, **kwargs) for tmp_sample in self.samples])
         return cov
+
 
     def get_allele_count_trajectories(self, region, safe=False, **kwargs):
         '''Get the allele count trajectories from files
@@ -172,6 +194,7 @@ class Patient(pd.Series):
         if len(act.mask.shape)<1:
             act.mask = np.zeros_like(act, dtype=bool)
         return act
+
 
     def get_allele_frequency_trajectories(self, region, safe=False,error_rate = 2e-3,  **kwargs):
         '''Get the allele count trajectories from files
@@ -191,6 +214,7 @@ class Patient(pd.Series):
             aft.mask = np.zeros_like(aft, dtype=bool)
         return aft
 
+
     def get_constrained(self, region):
         if region in self.annotation and self.annotation[region].type in ['gene', 'protein']:
             return np.array([self.pos_to_feature[pos]['RNA']>0 \
@@ -199,6 +223,7 @@ class Patient(pd.Series):
         else:
             print region,"is not a valid protein or gene"
             return None
+
 
     def get_gaps_by_codon(self, region, pad=0, threshold = 0.1):
         if region in self.annotation and self.annotation[region].type in ['gene', 'protein']:
@@ -212,6 +237,7 @@ class Patient(pd.Series):
         else:
             print region,"is not a valid protein or gene"
             return None
+
 
     def get_syn_mutations(self, region, mask_constrained = True):
         from itertools import izip
@@ -256,6 +282,7 @@ class Patient(pd.Series):
             print region,"is not a valid protein or gene"
             return None
 
+
     def _initial_consensus_noinsertions(self, VERBOSE=0, return_ind=False):
         '''Make initial consensus from allele frequencies, keep coordinates and masked
         sets: indices and sequence of initial sequence
@@ -274,6 +301,7 @@ class Patient(pd.Series):
         self.initial_indices = cons_ind
         self.initial_sequence = alpha[cons_ind]
 
+
     def get_initial_indices(self, region):
         if region=='genomewide':
             return self.initial_indices
@@ -283,6 +311,7 @@ class Patient(pd.Series):
             print "Not a valid annotation:",region
             return None
 
+
     def get_initial_sequence(self, region):
         tmp_ind = self.get_initial_indices(region)
         if tmp_ind is not None:
@@ -290,18 +319,22 @@ class Patient(pd.Series):
         else:
             return None
 
+
     def get_diversity(self, region):
         aft = self.get_allele_frequency_trajectories(region)
         return np.array(map(diversity, aft))
+
 
     def get_consensi(self, region):
         aft = self.get_allele_frequency_trajectories(region)
         return [''.join(consensus(x)) for x in aft]
 
+
     def get_divergence(self, region):
         aft = self.get_allele_frequency_trajectories(region)
         region_initial_indices = self.initial_indices[self._region_to_indices(region)]
         return np.array([divergence(x,region_initial_indices) for x in aft])
+
 
     def map_to_external_reference(self, roi, refname='HXB2', in_patient=True):
         '''
@@ -333,11 +366,14 @@ class Patient(pd.Series):
                 start, stop = map(int, roi)
                 start_ind = np.searchsorted(genomewide_map[:,in_patient], start)
                 stop_ind = np.searchsorted(genomewide_map[:,in_patient], stop)
-                return np.vstack((genomewide_map[start_ind:stop_ind].T, [genomewide_map[start_ind:stop_ind,in_patient]-start])).T
+                return np.vstack((genomewide_map[start_ind:stop_ind].T,
+                                  [genomewide_map[start_ind:stop_ind, in_patient] - start])).T
             except:
                 raise ValueError("ROI not understood")
 
-    # TODO: the following is experimental. was meant as a way to easily get an idea what kind of stuff a site is involved in
+
+    # TODO: the following is experimental. was meant as a way to easily get an
+    # idea what kind of stuff a site is involved in
     def positions_to_features(self):
         '''
         map of positions to features, including the number of proteins, RNA, etc this pos is part of
@@ -355,6 +391,7 @@ class Patient(pd.Series):
                     self.pos_to_feature[pos]['LTR']+=1
                 elif feature.type=='RNA_structure':
                     self.pos_to_feature[pos]['RNA']+=1
+
 
     def get_fragment_depth(self, pad=False, limit_to_dilution = False):
         c = self._annotation_to_fragment_indices('genomewide')

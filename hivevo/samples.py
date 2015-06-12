@@ -301,6 +301,10 @@ def load_samples_sequenced(patients=None, include_empty=False):
     # the two parallel RT-PCR reactions
     sample_table['n templates'] = sample_table['viral load'] * 0.4 / 12 * 2
 
+    # FIXME: the actual dates will disappear because of data protection
+    if 'date' in sample_table.columns:
+        sample_table['date'] = pd.to_datetime(sample_table['date'])
+
     if not include_empty:
         ind = [i for i, sample in sample_table.iterrows()
                if (sample[['F1', 'F2', 'F3', 'F4', 'F5', 'F6']] != 'miss').any()]
