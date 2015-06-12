@@ -20,15 +20,16 @@ class Sample(pd.Series):
     '''
     Class providing access to sample specific quantities such as as depth, counts etc
     '''
-
     def __init__(self, *args, **kwargs):
         '''Initialize a patient sample'''
         super(Sample, self).__init__(*args, **kwargs)
         self._sequenced_samples = None
 
+
     @property
     def _constructor(self):
         return Sample
+
 
     def get_n_templates_dilutions(self):
         '''Get the number of templates to PCR calculated by interpolating the limiting dilution'''
@@ -72,7 +73,8 @@ class Sample(pd.Series):
                 val = self['viral load']/60.0 
         return val
 
-    def _get_fragment_counts(self, fragment, use_PCR1, VERBOSE):
+
+    def _get_fragment_counts(self, fragment, VERBOSE):
         '''
         Get allele counts for a specific fragment of a specified PCR
         this method is not meant for general use
@@ -83,36 +85,26 @@ class Sample(pd.Series):
         from .filenames import get_allele_counts_filename
     
         # FIXME: add depth min
-        # PCR1 filter here
-        fn1 = get_allele_counts_filename(self.patient, self.name, fragment, PCR=1)
-        fn2 = get_allele_counts_filename(self.patient, self.name, fragment, PCR=2)
-        if os.path.isfile(fn1):
-            fname = fn1
-            if VERBOSE >= 3:
-                print self.name, 1
-        elif os.path.isfile(fn2) and use_PCR1<2:
-            fname = fn2
-            if VERBOSE >= 3:
-                print self.name, 2
-        else:
+        fname = get_allele_counts_filename(self.name, fragment)
+        if not os.path.isfile(fname):
             return None
         ac = np.load(fname).sum(axis=0)
         return ac
 
-    def get_allele_counts(self, coordinates, add = True, cov_min = 100, use_PCR1=1, VERBOSE=0, **kwargs):
+
+    def get_allele_counts(self, coordinates, add=True, cov_min=100, VERBOSE=0, **kwargs):
         '''
         get counts at positions specified by coordinates
         parameters:
         coordinates  -- a dictionary with  fields 'F1': (array(pos in region of interest), array(pos on fragment))
                         in addition, a field 'length': total length of the region of interest is required
         add          -- if True, add counts when fragments overlap (default), other wise take max
-        use_PCR1     -- 1 == use PCR1 is available (default), 2 == force PCR1 or fail
         cov_min      -- mask values where the final coverage is below that threshold
         '''
         ac = np.ma.zeros((6, coordinates['length']), dtype = int)
         for fragment in all_fragments:
             if fragment in coordinates:
-                tmp_ac = self._get_fragment_counts(fragment, use_PCR1, VERBOSE)
+                tmp_ac = self._get_fragment_counts(fragment, VERBOSE)
                 if tmp_ac is not None:
                     if add:
                         ac[:,coordinates[fragment][0]]+=tmp_ac[:,coordinates[fragment][1]]
@@ -124,38 +116,44 @@ class Sample(pd.Series):
             ac.mask = np.repeat([cov<cov_min], ac.shape[0], axis=0)
         return ac
 
-    def get_allele_frequencies(self, coordinates, add=True, cov_min = 100, use_PCR1=1, VERBOSE=0, **kwargs):
+
+    def get_allele_frequencies(self, coordinates, add=True, cov_min = 100, VERBOSE=0, **kwargs):
         '''
         get counts at positions specified by coordinates -- all options as get_allele_counts
         '''
-        ac = self.get_allele_counts(coordinates, add=add, cov_min=cov_min, use_PCR1=use_PCR1, VERBOSE=VERBOSE, **kwargs)
+        ac = self.get_allele_counts(coordinates, add=add, cov_min=cov_min, VERBOSE=VERBOSE, **kwargs)
         cov = ac.sum(axis=0)
         af = np.ma.masked_array(ac, dtype=float)
         af/=cov+1e-10
         af.mask += np.repeat([cov<cov_min], af.shape[0], axis=0)
         return af
         
-    def get_coverage(self, coordinates, add=True,use_PCR1=1, VERBOSE=0, **kwargs):
-        ac = self.get_allele_counts(coordinates, add=add, cov_min=None, use_PCR1=use_PCR1, VERBOSE=VERBOSE, **kwargs)
+
+    def get_coverage(self, coordinates, add=True, VERBOSE=0, **kwargs):
+        ac = self.get_allele_counts(coordinates, add=add, cov_min=None, VERBOSE=VERBOSE, **kwargs)
         return ac.sum(axis=0)
 
-    def get_cocounts(self, fragment, use_PCR1=True, compressed=True):
+
+    def get_cocounts(self, fragment, compressed=True, type='nuc'):
         '''
         get joint counts of nuc1 at pos1 and nuc2 at pos2 for a fragment
         returns:
         ac     --  array of dimension (6,6,L,L) where L is the length of the fragment
         '''
-        from hivwholeseq.patients.filenames import get_allele_cocounts_filename
-        try: # TODO: compressed or not needs cleaning up
-            fname = get_allele_cocounts_filename(self.patient, self.name, fragment, PCR=1 if use_PCR1 else 2, compressed=compressed)
+        # FIXME: get_allele_counts takes a "coordinates" object, whereas cocounts
+        # takes a string... this should be homogenized
+        from .filenames import get_allele_cocounts_filename
+        if compressed:
+            fname = get_allele_cocounts_filename(self.name, fragment, type=type, format='npz')
             ac = np.load(fname)['cocounts']
-        except:
-            fname = get_allele_cocounts_filename(self.patient, self.name, fragment, PCR=1 if use_PCR1 else 2, compressed=False)
+        else:
+            fname = get_allele_cocounts_filename(self.name, fragment, type=type, format='npy')
             ac = np.load(fname)
 
         return ac
 
-    def get_pair_frequencies(self, fragment, var_min=0, use_PCR1=True, compressed=True):
+
+    def get_pair_frequencies(self, fragment, var_min=0, compressed=True):
         '''
         return the fraction of observations of nuc1, nuc2 and pos1, pos2 reduced to variable positions
         parameters:
@@ -169,7 +167,7 @@ class Sample(pd.Series):
         '''
         import gc
         try:
-            acc = self.get_cocounts(fragment, use_PCR1=use_PCR1, compressed=compressed)
+            acc = self.get_cocounts(fragment, compressed=compressed)
         except:
             return_args = (None, None, None, None)
         else:
@@ -195,6 +193,7 @@ class Sample(pd.Series):
             del acc, af1p
             gc.collect()
         return return_args
+
 
     def fragment_depth(self, coordinates, var_min = 0.03, cov_min = 100, min_points = 5, pseudo_counts = 3):
         '''
@@ -252,12 +251,13 @@ class Sample(pd.Series):
 
         return neff_fragments
 
+
     # TODO: the following doesn't work 
-    def haplotypes(self, fragment, start, stop, VERBOSE=0, maxreads=-1, filters=None, PCR=1):
+    def haplotypes(self, fragment, start, stop, VERBOSE=0, maxreads=-1, filters=None):
         from hivwholeseq.patients.get_local_haplotypes import get_local_haplotypes
         from .filenames import get_mapped_filtered_filename
 
-        bam_fname = get_mapped_filtered_filename(self.patient, self.name, fragment, type='bam', PCR=PCR, decontaminated=True)
+        bam_fname = get_mapped_filtered_filename(self.patient, self.name, fragment, type='bam', decontaminated=True)
         try:
             return get_local_haplotypes(bam_fname, start, stop)
         except:
@@ -282,6 +282,8 @@ class Sample(pd.Series):
                     start += length
                     stop = start + length + padding
         return haps
+
+
 
 # Functions
 def load_samples_sequenced(patients=None, include_empty=False):
