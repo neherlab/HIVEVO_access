@@ -188,6 +188,16 @@ class Patient(pd.Series):
           **kwargs: passed down to the function (VERBOSE, etc.).
 
         Note: the genomewide counts are currently saved to file.
+
+        Examples:
+
+        1. Nucleotides from a certain region:
+
+        patient.get_allele_count_trajectories('PR', type='nuc')
+
+        2. Amino acids from a certain region:
+
+        patient.get_allele_count_trajectories('PR', type='aa')
         '''
         if type == 'nuc':
             coordinates = self._annotation_to_fragment_indices(region)
