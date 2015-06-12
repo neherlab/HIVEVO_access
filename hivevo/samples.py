@@ -74,43 +74,68 @@ class Sample(pd.Series):
         return val
 
 
-    def _get_fragment_counts(self, fragment, VERBOSE):
-        '''
-        Get allele counts for a specific fragment of a specified PCR
-        this method is not meant for general use
-        '''
-        if VERBOSE >= 1:
-            print 'Getting allele counts:', self.patient, self.name, fragment
-
-        from .filenames import get_allele_counts_filename
-    
-        # FIXME: add depth min
-        fname = get_allele_counts_filename(self.name, fragment)
-        if not os.path.isfile(fname):
-            return None
-        ac = np.load(fname).sum(axis=0)
-        return ac
-
-
-    def get_allele_counts(self, coordinates, add=True, cov_min=100, VERBOSE=0, **kwargs):
+    def get_allele_counts(self, coordinates, add=True, cov_min=100, VERBOSE=0,
+                          type='nuc',
+                          **kwargs):
         '''
         get counts at positions specified by coordinates
         parameters:
-        coordinates  -- a dictionary with  fields 'F1': (array(pos in region of interest), array(pos on fragment))
-                        in addition, a field 'length': total length of the region of interest is required
+        coordinates  -- a dictionary with different contents for nucleotides and amino acids.
+          - nucleotides: fields 'F1': (array(pos in region of interest), array(pos on fragment))
+                         a field 'length': total length of the region of interest is required
+          - amino acids: fields 'PR': array(pos in region of interest)
         add          -- if True, add counts when fragments overlap (default), other wise take max
+                        this parameter is only used for nucleotides
         cov_min      -- mask values where the final coverage is below that threshold
-        '''
-        ac = np.ma.zeros((6, coordinates['length']), dtype = int)
-        for fragment in all_fragments:
-            if fragment in coordinates:
-                tmp_ac = self._get_fragment_counts(fragment, VERBOSE)
-                if tmp_ac is not None:
-                    if add:
-                        ac[:,coordinates[fragment][0]]+=tmp_ac[:,coordinates[fragment][1]]
-                    else:
-                        ac[:,coordinates[fragment][0]]=np.maximum(ac[:,coordinates[fragment][0]], 
-                                                                  tmp_ac[:,coordinates[fragment][1]])
+        type         -- 'nuc' for nucleotides, 'aa' for amino acids, 'cod' for codons
+
+        NOTE: the difference in the coordinate data structure for nucleotides and
+        amino acids stems from the different storage strategies. Nucleotides are
+        saved fragment by fragment to allow a separation of the PCR of origin.
+        Amino acid may merge fragments because they need a frame of reference
+        and it is confusing to separate by fragment AND protein at the same time.
+        If you do need such surgical tayloring, you can recompute the amino acid
+        counts from the reads (which are split by fragment).
+
+        Examples:
+
+        1. Nucleotides from a certain fragment
+        
+        sample.get_allele_counts({'F3': [[0, 1, 2], [56, 57, 58]], 'length': 100},
+                                 type='nuc')
+
+
+        2. Amino acids from a certain protein
+
+        sample.get_allele_counts({'PR': [0, 1, 2]}, type='aa')
+        '''        
+        from .filenames import get_allele_counts_filename
+
+        if type == 'nuc':
+            from .sequence import alpha
+            ac = np.ma.zeros((len(alpha), coordinates['length']), dtype=int)
+            for fragment, coord in coordinates.iteritems():
+                fname = get_allele_counts_filename(self.name, fragment, type=type)
+                if not os.path.isfile(fname):
+                    continue
+                tmp_ac = np.load(fname).sum(axis=0)
+                if add:
+                    ac[:,coord[0]] += tmp_ac[:, coordinates[fragment][1]]
+                else:
+                    ac[:,coord[0]] = np.maximum(ac[:, coord[0]], tmp_ac[:, coord[1]])
+
+        elif type == 'aa':
+            # The dict should have a single protein not the best data structure
+            for protein, coord in coordinates.iteritems():
+                fname = get_allele_counts_filename(self.name, protein, type=type)
+                ac = np.load(fname)[:, coord]
+                break
+
+        else:
+            raise ValueError('Data type not understood')
+
+        ac = np.ma.asarray(ac)
+
         if cov_min is not None:
             cov = ac.sum(axis=0)
             ac.mask = np.repeat([cov<cov_min], ac.shape[0], axis=0)
