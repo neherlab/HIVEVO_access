@@ -24,7 +24,8 @@ reference_folder = root_data_folder+'reference/'
 root_data_folder = root_data_folder+'website/'
 
 
-self = os.path.dirname(os.path.abspath(__name__.replace('.', '/')))+'/'
+import hivevo
+self = hivevo.__path__[-1]+'/'
 table_folder = self + '../data/tables/'
 
 
@@ -44,6 +45,18 @@ def get_custom_reference_filename(reference, format='fasta'):
 def get_subtype_reference_alignment_filename(subtype='B', format='fasta', refname='HXB2'):
     '''Get the filename of a reference alignment'''
     filename = 'genomewide.'+subtype+'.nuc.aligned.'+format
+    return reference_folder+'alignments/pairwise_to_'+refname+'/'+filename
+
+
+def get_subtype_reference_allele_frequencies_filename(subtype='B', format='npy', refname='HXB2'):
+    '''Get the filename of a reference alignment'''
+    filename = 'genomewide.'+subtype+'.nuc.aligned_afs'+'.'+format
+    return reference_folder+'alignments/pairwise_to_'+refname+'/'+filename
+
+
+def get_subtype_reference_entropy_filename(subtype='B', format='npy', refname='HXB2'):
+    '''Get the filename of a reference alignment'''
+    filename = 'genomewide.'+subtype+'.nuc.aligned_afs'+'.'+format
     return reference_folder+'alignments/pairwise_to_'+refname+'/'+filename
 
 

@@ -15,6 +15,41 @@ from .sequence import alpha, alphaa
 
 
 # Classes
+# TODO: finish implementing pd.DataFrame for several patients at once, if we want
+class Patients(pd.DataFrame):
+    '''
+    Class for several patients at once'''
+    def __init__(self, *args, **kwargs):
+        super(Patients, self).__init__(*args, **kwargs)
+
+
+    @classmethod
+    def load(cls, pnames):
+        from .filenames import get_table_filename
+        patients = pd.read_excel(get_table_filename('patients'),
+                                 'Patients',
+                                 index_col=0)
+        patients.index = pd.Index(map(str, patients.index))
+        self = cls(patients.index.isin[pnames])
+
+
+    @property
+    def _constructor(self):
+        return Patient
+
+
+    @property
+    def _constructor_expanddim(self):
+        raise NotImplementedError
+
+
+    @property
+    def _constructor_sliced(self):
+        # NOTE: we should check whether one slices by rows (single patient) or
+        # columns
+        return NotImplementedError
+
+
 class Patient(pd.Series):
     '''
     Class providing access to longitudinal sequencing data of HIV-1 populations
@@ -22,6 +57,16 @@ class Patient(pd.Series):
     and access methods to single nucleotide variants, pair frequencies, and genomic
     features of the the HIV poputions
     '''
+    _metadata = ['samples',
+                 '_dates',
+                 '_cd4',
+                 '_viral_load',
+                 '_times',
+                 '_n_templates_dilutions',
+                 '_n_templates_viral_load',
+                 'initial_sequence',
+                 'pos_to_feature',
+                ]
 
     def __init__(self, *args, **kwargs):
         '''Initialize a patient with all his samples'''
@@ -62,6 +107,12 @@ class Patient(pd.Series):
     @property
     def _constructor(self):
         return Patient
+
+
+    @property
+    def _constructor_expanddim(self):
+        # TODO: implement pd.DataFrame for several patients at once
+        raise NotImplementedError
 
 
     @property
@@ -414,7 +465,8 @@ class Patient(pd.Series):
 
     def get_fragment_depth(self, pad=False, limit_to_dilution = False):
         c = self._annotation_to_fragment_indices('genomewide')
-        depth = np.ma.array([s.fragment_depth(c,cov_min = 100, var_min = 0.05, min_points = 10) for s in self.samples])
+        depth = np.ma.array([s.fragment_depth(c,cov_min=100, var_min=0.05, min_points=10)
+                             for s in self.samples])
         if pad:
             for si in xrange(len(self.samples)):
                 depth[si][depth.mask[si]] = self.n_templates_dilutions[si]
