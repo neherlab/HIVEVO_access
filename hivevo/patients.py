@@ -101,7 +101,7 @@ class Patient(pd.Series):
         if pname in patients.index:
             return cls(patients.loc[pname])
         else:
-            return cls(patients.loc[patients.code == pname].iloc[0])
+            raise ValueError('Patient '+str(pname)+' not found')
 
 
     @property
