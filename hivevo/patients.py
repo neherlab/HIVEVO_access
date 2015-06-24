@@ -266,17 +266,34 @@ class Patient(pd.Series):
         return act
 
 
-    def get_allele_frequency_trajectories(self, region, safe=False,error_rate = 2e-3,  **kwargs):
+    def get_allele_frequency_trajectories(self, region, safe=False,error_rate = 2e-3, type='nuc',  **kwargs):
         '''Get the allele count trajectories from files
         
         Args:
           region (str): region to study, a fragment or a genomic feature (e.g. V3)
+          type (str): 'nuc' for nucleotides, 'aa' for amino acids
           **kwargs: passed down to the function (VERBOSE, etc.).
 
         Note: the genomewide counts are currently saved to file.
+        Examples:
+
+        1. Nucleotides from a certain region:
+
+        patient.get_allele_frequencies_trajectories('PR', type='nuc')
+
+        2. Amino acids from a certain region:
+
+        patient.get_allele_frequencies_trajectories('PR', type='aa')
+
         '''
-        coordinates = self._annotation_to_fragment_indices(region)
-        aft = np.ma.array([tmp_sample.get_allele_frequencies(coordinates, **kwargs) 
+        if type == 'nuc':
+            coordinates = self._annotation_to_fragment_indices(region)
+        elif type == 'aa':
+            coordinates = {region: None}
+        else:
+            raise ValueError('Data type not understood')
+
+        aft = np.ma.array([tmp_sample.get_allele_frequencies(coordinates, type=type, **kwargs) 
                           for tmp_sample in self.samples], hard_mask=True, shrink=False)
         # set very low frequencies to zero, these are likely sequencing errors
         aft[aft<error_rate]=0
@@ -353,39 +370,46 @@ class Patient(pd.Series):
             return None
 
 
-    def _initial_consensus_noinsertions(self, VERBOSE=0, return_ind=False):
+    def _initial_consensus_noinsertions(self, region='genomewide',VERBOSE=0, type='nuc'):
         '''Make initial consensus from allele frequencies, keep coordinates and masked
         sets: indices and sequence of initial sequence
         '''
-        aft = self.get_allele_frequency_trajectories('genomewide')
+        aft = self.get_allele_frequency_trajectories(region, type=type)
+        tmp_alpha = alpha if type=='nuc' else alphaa
         # Fill the masked positions with N...
+        mask_index = len(tmp_alpha)-1
         cons_ind = aft[0].argmax(axis=0)
-        cons_ind[aft.mask[0].max(axis=0)] = 5
+        cons_ind[aft.mask[0].max(axis=0)] = mask_index
     
         for af_later in aft[1:]:
             cons_ind_later = af_later.argmax(axis=0)
-            cons_ind_later[af_later.mask.max(axis=0)] = 5
-            ind_Ns = (cons_ind == 5) & (cons_ind_later != 5)
+            cons_ind_later[af_later.mask.max(axis=0)] = mask_index
+            ind_Ns = (cons_ind == mask_index) & (cons_ind_later != mask_index)
             cons_ind[ind_Ns] = cons_ind_later[ind_Ns]
 
-        self.initial_indices = cons_ind
-        self.initial_sequence = alpha[cons_ind]
-
-
-    def get_initial_indices(self, region):
-        if region=='genomewide':
-            return self.initial_indices
-        elif region in self.annotation:
-            return np.array([self.initial_indices[pos] for pos in self.annotation[region]])
+        if region=='genomewide' and type=='nuc':
+            self.initial_indices = cons_ind
+            self.initial_sequence = alpha[cons_ind]
         else:
-            print "Not a valid annotation:",region
-            return None
+            return cons_ind
 
+    def get_initial_indices(self, region, type='nuc'):
+        if type=='nuc':
+            if region=='genomewide':
+                return self.initial_indices
+            elif region in self.annotation:
+                return np.array([self.initial_indices[pos] for pos in self.annotation[region]])
+            else:
+                print "Not a valid annotation:",region
+                return None
+        elif type=='aa':
+            return self._initial_consensus_noinsertions(region, type=type)
 
-    def get_initial_sequence(self, region):
-        tmp_ind = self.get_initial_indices(region)
+    def get_initial_sequence(self, region, type='nuc'):
+        tmp_ind = self.get_initial_indices(region, type=type)
+        tmp_alpha = alpha if type=='nuc' else alphaa
         if tmp_ind is not None:
-            return alpha[tmp_ind]
+            return tmp_alpha[tmp_ind]
         else:
             return None
 

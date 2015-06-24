@@ -145,11 +145,11 @@ class Sample(pd.Series):
         return ac
 
 
-    def get_allele_frequencies(self, coordinates, add=True, cov_min = 100, VERBOSE=0, **kwargs):
+    def get_allele_frequencies(self, coordinates, add=True, cov_min = 100, VERBOSE=0, type='nuc', **kwargs):
         '''
         get counts at positions specified by coordinates -- all options as get_allele_counts
         '''
-        ac = self.get_allele_counts(coordinates, add=add, cov_min=cov_min, VERBOSE=VERBOSE, **kwargs)
+        ac = self.get_allele_counts(coordinates, add=add, cov_min=cov_min, VERBOSE=VERBOSE, type=type, **kwargs)
         cov = ac.sum(axis=0)
         af = np.ma.masked_array(ac, dtype=float)
         af/=cov+1e-10
