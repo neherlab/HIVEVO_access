@@ -331,7 +331,7 @@ def load_samples_sequenced(patients=None, include_empty=False):
 
     # FIXME: the actual dates will disappear because of data protection
     if 'date' in sample_table.columns:
-        sample_table['date'] = pd.to_datetime(sample_table['date'])
+        sample_table['date'] = pd.to_datetime(sample_table['date'], format = '%d/%m/%Y')
 
     if not include_empty:
         ind = [i for i, sample in sample_table.iterrows()
