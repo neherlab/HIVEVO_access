@@ -93,7 +93,7 @@ def get_allele_cocounts_filename(samplename, region,
                                type='nuc',
                                format='npy'):
     '''Get the filename of the allele counts for a patient sample'''
-    filename = ('allele_cocounts_'+
+    filename = ('cocounts_'+
                 samplename+'_'+
                 region+
                 '.'+format)
