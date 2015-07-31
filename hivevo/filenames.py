@@ -9,14 +9,28 @@ import os
 
 
 # Globals
-if os.path.isdir('/media/FZ_MPI/HIV_Sweden/'):
+
+# Data folder: use env variable if found, else fallback onto standard locations
+if 'HIVEVO_ROOT_DATA_FOLDER' in os.environ:
+    root_data_folder = os.environ['HIVEVO_ROOT_DATA_FOLDER']
+
+# USB disk
+elif os.path.isdir('/media/FZ_MPI/HIV_Sweden/'):
     root_data_folder = '/media/FZ_MPI/HIV_Sweden/'
+
+# Web server
 elif os.path.isdir('/var/www/hivwholeweb/'):
     root_data_folder = '/var/www/hivwholeweb/app/hiv/static/data/'
+
+# Fabio's hard drive
 elif os.path.isdir('/home/fabio/') and (not os.path.isdir('/ebio/ag-neher/share/data')):
     root_data_folder = '/home/fabio/university/phd/sequencing/data/'
+
+# MPI's file server
 else:
     root_data_folder = '/ebio/ag-neher/share/data/MiSeq_HIV_Karolinska/'
+
+root_data_folder = root_data_folder.rstrip(os.path.sep)+os.path.sep
 
 # NOTE: we use the website folder for consistency
 # NOTE: the website folder does not include cross-sectional alignments and stuff
