@@ -42,9 +42,11 @@ root_data_folder = root_data_folder+'website/'
 import hivevo
 self = os.path.abspath(hivevo.__path__[0])+'/'
 if os.path.isdir(self+'hivevo'):
-    table_folder = self + 'data/tables/'
+    local_data_folder = self + 'data/'
 else:
-    table_folder = self + '../data/tables/'
+    local_data_folder = self + '../data/'
+
+table_folder = local_data_folder + 'tables/'
 
 
 
