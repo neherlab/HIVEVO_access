@@ -38,9 +38,13 @@ reference_folder = root_data_folder+'reference/'
 root_data_folder = root_data_folder+'website/'
 
 
+# NOTE: this is a bit of a hack
 import hivevo
-self = hivevo.__path__[-1]+'/'
-table_folder = self + '../data/tables/'
+self = os.path.abspath(hivevo.__path__[0])+'/'
+if os.path.isdir(self+'hivevo'):
+    table_folder = self + 'data/tables/'
+else:
+    table_folder = self + '../data/tables/'
 
 
 
