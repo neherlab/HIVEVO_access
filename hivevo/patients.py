@@ -630,3 +630,23 @@ class Patient(pd.Series):
 
         return ctl_table
 
+
+    def get_haplotype_alignment(self, region):
+        '''Get alignment of minor haplotypes from whole infection
+
+        Parameters:
+           region (str or ROI): if a string, it indicates a genomic region
+           (e.g. V3) and the haplotype alignment is read from file. If a
+           ROI, i.e. a triple (region, start, end), it extracts the haplotypes
+           de novo from the BAM files.
+
+        TODO: ROI de novo computation not implemented yet.
+        '''
+        if isinstance(region, basestring):
+            from Bio import AlignIO
+            from .filenames import get_haplotype_alignment_filename
+            fn = get_haplotype_alignment_filename(self.name, region, 'fasta')
+            return AlignIO.read(fn, 'fasta')
+
+        else:
+            raise NotImplementedError

@@ -147,3 +147,9 @@ def get_coordinate_map_filename(pname, fragment, refname='HXB2', format='tsv'):
     return filename
 
 
+def get_haplotype_alignment_filename(pname, region, format='fasta'):
+    '''Get the filenae of a haplotype alignment'''
+    filename = 'haplotype_alignment_'+pname+'_'+region+'.'+format
+    filename = root_data_folder+'alignments/'+filename
+    return filename
+
