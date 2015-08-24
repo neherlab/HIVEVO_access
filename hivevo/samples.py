@@ -317,21 +317,13 @@ class Sample(pd.Series):
 def load_samples_sequenced(patients=None, include_empty=False):
     '''Load patient samples sequenced from general table'''
     from .filenames import get_table_filename
-    sample_table = pd.read_excel(get_table_filename('samples'),
-                                 'Samples',
-                                 index_col=0)
-
-    # Reindex DataFrame
-    sample_table.index = pd.Index(map(str, sample_table.index))
-    sample_table.loc[:, 'patient'] = map(str, sample_table.loc[:, 'patient'])
+    sample_table = pd.read_csv(get_table_filename('samples'),
+                               sep='\t',
+                               index_col=0)
 
     # Note: this refers to the TOTAL # of templates, i.e. the factor 2x for
     # the two parallel RT-PCR reactions
     sample_table['n templates'] = sample_table['viral load'] * 0.4 / 12 * 2
-
-    # FIXME: the actual dates will disappear because of data protection
-    if 'date' in sample_table.columns:
-        sample_table['date'] = pd.to_datetime(sample_table['date'], format = '%d/%m/%Y')
 
     if not include_empty:
         ind = [i for i, sample in sample_table.iterrows()

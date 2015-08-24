@@ -5,6 +5,7 @@ date:       25/04/2015
 content:    Data access module HIV patients.
 '''
 # Modules
+from operator import itemgetter
 import numpy as np
 import pandas as pd
 from Bio import SeqIO,Seq
@@ -15,41 +16,6 @@ from .sequence import alpha, alphaa
 
 
 # Classes
-# TODO: finish implementing pd.DataFrame for several patients at once, if we want
-class Patients(pd.DataFrame):
-    '''
-    Class for several patients at once'''
-    def __init__(self, *args, **kwargs):
-        super(Patients, self).__init__(*args, **kwargs)
-
-
-    @classmethod
-    def load(cls, pnames):
-        from .filenames import get_table_filename
-        patients = pd.read_excel(get_table_filename('patients'),
-                                 'Patients',
-                                 index_col=0)
-        patients.index = pd.Index(map(str, patients.index))
-        self = cls(patients.index.isin[pnames])
-
-
-    @property
-    def _constructor(self):
-        return Patient
-
-
-    @property
-    def _constructor_expanddim(self):
-        raise NotImplementedError
-
-
-    @property
-    def _constructor_sliced(self):
-        # NOTE: we should check whether one slices by rows (single patient) or
-        # columns
-        return NotImplementedError
-
-
 class Patient(pd.Series):
     '''
     Class providing access to longitudinal sequencing data of HIV-1 populations
@@ -58,7 +24,6 @@ class Patient(pd.Series):
     features of the the HIV poputions
     '''
     _metadata = ['samples',
-                 '_dates',
                  '_cd4',
                  '_viral_load',
                  '_times',
@@ -73,8 +38,7 @@ class Patient(pd.Series):
         include_cell = kwargs.pop('include_cell', False)
         super(Patient, self).__init__(*args, **kwargs)
         self.samples = sorted(load_samples_sequenced(patients=[self.name]), 
-                              key = lambda x:x.date)
-        self._dates = [x.date for x in self.samples]
+                              key=itemgetter('days since infection'))
         self._cd4 = [x['CD4+ count'] for x in self.samples]
         self._viral_load = [x['viral load'] for x in self.samples]
 
@@ -86,7 +50,7 @@ class Patient(pd.Series):
         self._times = []
         self.reference = self.load_reference()
         # translate genbank encoded sequence features into a dictionary
-        self.annotation = {x.qualifiers['note'][-1]:x for x in self.reference.features}
+        self.annotation = {x.qualifiers['note'][-1]: x for x in self.reference.features}
         self._initial_consensus_noinsertions()
         self.positions_to_features()
 
@@ -94,14 +58,12 @@ class Patient(pd.Series):
     @classmethod
     def load(cls, pname):
         from .filenames import get_table_filename
-        patients = pd.read_excel(get_table_filename('patients'),
-                                 'Patients',
-                                 index_col=0)
-        patients.index = pd.Index(map(str, patients.index))
-        if pname in patients.index:
-            return cls(patients.loc[pname])
-        else:
+        patients = pd.read_csv(get_table_filename('patients'),
+                               sep='\t',
+                               index_col=0)
+        if pname not in patients.index:
             raise ValueError('Patient '+str(pname)+' not found')
+        return cls(patients.loc[pname])
 
 
     @property
@@ -119,11 +81,6 @@ class Patient(pd.Series):
     def transmission_date(self):
         '''The most likely time of transmission'''
         return self['infect date best']
-
-
-    @property
-    def dates(self):
-        return self._dates
 
 
     @property

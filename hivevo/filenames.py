@@ -51,7 +51,7 @@ table_folder = local_data_folder + 'tables/'
 
 
 # Functions
-def get_table_filename(kind, format='xlsx'):
+def get_table_filename(kind, format='tsv'):
     return table_folder+kind+'.'+format
 
 

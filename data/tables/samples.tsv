@@ -1,0 +1,74 @@
+id	patient	days since infection	viral load	CD4+ count	templates approx	dilutions	F1	F2	F3	F4	F5	F6
+p1_sample_1	p1	49	499	537	33.2666666667	1:10 (0/2)	ok	ok	ok	ok	ok	ok
+p1_sample_2	p1	489	6900	545	460	1:100 (1/2)	ok	ok	ok	ok	end lower	ok
+p1_sample_3	p1	1011	5700	600	380	1:100 (1/2)	ok	ok	ok	ok	ok	ok
+p1_sample_4	p1	1181	11000	0	733.3333333333	1:10 (2/2)	ok	ok	ok	ok	ok	ok
+p1_sample_5	p1	1209	11000	560	733.3333333333	1:100 (1/2)	ok	ok	ok	ok	ok	ok
+p1_sample_6	p1	1320	6600	510	440	1:100 (2/2)	ok	ok	ok	ok	ok	ok
+p1_sample_7	p1	1788	9800	530	653.3333333333	1:100 (1/2)	ok	ok	ok	ok	low diversity	ok
+p1_sample_8	p1	2230	39000	450	2600	1:100 (2/2)	ok	ok	ok	ok	low	ok
+p1_sample_9	p1	2505	292000	430	19466.6666666667	1:1000 (2/2)	ok	ok	ok	ok	low	ok
+p1_sample_10	p1	2566	240000	580	16000	1:10000 (1/2)	ok	ok	ok	ok	low	ok
+p1_sample_11	p1	2849	501000	420	33400	1:1000 (2/2)	ok	ok	ok	ok	ok	ok
+p1_sample_12	p1	2923	648000	340	43200	1:10000 (2/2)	ok	ok	ok	ok	ok	ok
+p2_sample_1	p2	74	31100	1185	2073.3333333333	1:100 (1/2)	ok	ok	ok	ok	ok	ok
+p2_sample_2	p2	561	1800	1033	120	1:10 (2/2)	ok	ok	ok	ok	ok	ok
+p2_sample_3	p2	936	1800	760	120	1:10 (1/2)	ok	ok	ok	ok	ok	ok
+p2_sample_4	p2	1255	11700	731	780	1:10 (2/2)	ok	ok	ok	ok	low	ok
+p2_sample_5	p2	1628	1200	644	80	1:10 (1/2)	ok	ok	ok	ok	miss	ok
+p2_sample_6	p2	2018	1070	369	71.3333333333	1:10 (2/2)	ok	ok	ok	ok	ok	ok
+p3_sample_1	p3	103	17300	694	1153.3333333333	1:10 (2/2)	ok	ok	ok	ok	ok	ok
+p3_sample_2	p3	458	66000	639	4400	1:1000 (1/2)	ok	ok	ok	ok	ok	ok
+p3_sample_3	p3	754	12300	591	820	1:100 (2/2)	ok	ok	ok	ok	ok	ok
+p3_sample_4	p3	1083	13000	511	866.6666666667	1:10 (1/2)	ok	ok	ok	ok	miss	ok
+p3_sample_5	p3	1433	12000	543	800	1:100 (1/2)	ok	ok	ok	ok	ok	ok
+p3_sample_6	p3	1891	16000	500	1066.6666666667	1:100 (2/2)	ok	ok	ok	ok	miss	ok
+p3_sample_7	p3	1963	38000		2533.3333333333	1:100 (1/2)	ok	ok	low	ok	ok	ok
+p3_sample_8	p3	2301	75000	380	5000	1:1000 (2/2)	ok	ok	ok	ok	ok	ok
+p3_sample_9	p3	2684	120000	310	8000	1:100 (2/2)	ok	miss	ok	ok	miss	ok
+p3_sample_10	p3	3036	49000	140	3266.6666666667	1:1000 (1/2)	ok	ok	ok	ok	ok	ok
+p5_sample_1	p5	132	49	521	3.2666666667	1:10 (0/2)	miss	ok	ok	ok	ok	ok
+p5_sample_2	p5	301	900	702	60	1:10 (2/2)	ok	ok	ok	ok	miss	ok
+p5_sample_3	p5	711	1400	430	93.3333333333	1:10 (1/2)	ok	ok	ok	ok	ok	ok
+p5_sample_4	p5	1055	8400	500	560	1:100 (2/2)	ok	ok	ok	ok	ok	ok
+p5_sample_5	p5	1412	2600	382	173.3333333333	1:10 (2/2)	ok	ok	ok	ok	ok	ok
+p5_sample_6	p5	1811	10700	333	713.3333333333	1:100 (1/2)	ok	ok	ok	ok	ok	ok
+p5_sample_7	p5	2147	8770	228	584.6666666667	1:100 (1/2)	ok	ok	ok	ok	ok	ok
+p6_sample_1	p6	46	6800	480	453.3333333333	1:100 (1/2)	ok	ok	ok	ok	ok	ok
+p6_sample_2	p6	102	2900	440	193.3333333333	1:100 (2/2)	ok	ok	ok	ok	ok	ok
+p6_sample_3	p6	958	100	590	6.6666666667	1:10 (1/2)	end lower	ok	ok	ok	miss	ok
+p6_sample_4	p6	1277	2600	630	173.3333333333	1:10 (1/2)	ok	ok	ok	ok	ok	ok
+p6_sample_5	p6	1708	700	550	46.6666666667	1:10 (1/2)	ok	ok	ok	ok	miss	ok
+p6_sample_6	p6	2162	3280	418	218.6666666667	1:100 (1/2)	ok	ok	ok	ok	ok	ok
+p6_sample_7	p6	2540	34700	287	2313.3333333333	1:100 (2/2)	ok	ok	ok	ok	ok	ok
+p8_sample_1	p8	64	2900	460	193.3333333333	1:10 (2/2)	ok	ok	ok	ok	ok	low
+p8_sample_2	p8	177	3900		260	1:100 (2/2)	ok	low	ok	ok	ok	ok
+p8_sample_3	p8	547	12400	1271	826.6666666667	1:100 (2/2)	ok	ok	ok	ok	ok	ok
+p8_sample_4	p8	980	37900	535	2526.6666666667	1:100 (2/2)	ok	ok	ok	ok	ok	ok
+p8_sample_5	p8	1414	34200	335	2280	1:100 (2/2)	ok	ok	ok	ok	ok	ok
+p8_sample_6	p8	1787	103000	430	6866.6666666667	1:1000 (2/2)	ok	ok	low	ok	ok	ok
+p8_sample_7	p8	2185	530000	378	35333.3333333333	1:10000 (1/2)	ok	ok	ok	ok	ok	ok
+p9_sample_1	p9	180	2300	720	153.3333333333	1:10 (2/2)	ok	ok	ok	ok	ok	ok
+p9_sample_2	p9	301	2000		133.3333333333	1:10 (2/2)	ok	ok	ok	ok	ok	ok
+p9_sample_3	p9	887	1000	870	66.6666666667	1:10 (0/2)	ok	ok	ok	ok	ok	ok
+p9_sample_4	p9	1267	1100	1000	73.3333333333	1:10 (2/2)	ok	ok	ok	miss	miss	ok
+p9_sample_5	p9	1889	3900	1094	260	1:10 (2/2)	ok	ok	ok	ok	ok	ok
+p9_sample_6	p9	2288	120000	1150	8000	1:100 (1/2)	ok	ok	ok	ok	ok	ok
+p9_sample_7	p9	2682	28800	669	1920	1:1000 (1/2)	ok	ok	ok	ok	miss	ok
+p9_sample_8	p9	3029	35000	158	2333.3333333333	1:100 (2/2)	ok	ok	ok	ok	ok	ok
+p10_sample_1	p10	18	0	0	0	1:1000 (2/2)	ok	ok	ok	ok	ok	ok
+p10_sample_2	p10	51	594000	0	39600		ok	ok	ok	ok	miss	ok
+p10_sample_3	p10	53	164000	420	10933.3333333333	1:10 (2/2)	end lower	ok	low	ok	miss	miss
+p10_sample_4	p10	359	0		0	1:1 (1/1)	ok	ok	ok	ok	miss	ok
+p10_sample_5	p10	515	0	480	0	1:10 (0/2)	miss	miss	miss	ok	miss	miss
+p10_sample_6	p10	897	0	430	0	1:10 (2/2)	ok	ok	ok	ok	miss	ok
+p10_sample_7	p10	989	0	460	0	1:100 (1/2)	ok	ok	ok	miss	miss	miss
+p10_sample_8	p10	2214	12000		800	1:100 (1/2)	ok	ok	ok	ok	ok	ok
+p10_sample_9	p10	2241	10500		700	1:10 (0/2)	ok	ok	ok	ok	miss	ok
+p11_sample_1	p11	337	12700	850	846.6666666667	1:100 (2/2)	ok	ok	ok	ok	ok	ok
+p11_sample_2	p11	460	18100	845	1206.6666666667	1:100 (1/2)	ok	ok	ok	ok	ok	ok
+p11_sample_3	p11	700	28000	690	1866.6666666667	1:10 (1/2)	ok	ok	ok	ok	ok	ok
+p11_sample_4	p11	1154	13000	566	866.6666666667	1:100 (2/2)	ok	ok	ok	ok	ok	ok
+p11_sample_5	p11	1524	63000	663	4200	1:100 (2/2)	ok	ok	ok	ok	ok	ok
+p11_sample_6	p11	1878	476000	423	31733.3333333333	1:1000 (1/2)	ok	ok	ok	ok	miss	ok
+p11_sample_7	p11	2171	28000	251	1866.6666666667	1:1000 (2/2)	ok	ok	ok	ok	ok	ok
