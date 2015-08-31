@@ -320,7 +320,6 @@ def load_samples_sequenced(patients=None):
 
     sample_table = []
     for fn in get_sample_table_filenames(pnames=patients):
-        print fn
         sample_table.append(pd.read_csv(fn, sep='\t', index_col=0))
     sample_table = pd.concat(sample_table)
 
