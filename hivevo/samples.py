@@ -314,23 +314,18 @@ class Sample(pd.Series):
 
 
 # Functions
-def load_samples_sequenced(patients=None, include_empty=False):
+def load_samples_sequenced(patients=None):
     '''Load patient samples sequenced from general table'''
-    from .filenames import get_table_filename
-    sample_table = pd.read_csv(get_table_filename('samples'),
-                               sep='\t',
-                               index_col=0)
+    from .filenames import get_sample_table_filenames
+
+    sample_table = []
+    for fn in get_sample_table_filenames(pnames=patients):
+        print fn
+        sample_table.append(pd.read_csv(fn, sep='\t', index_col=0))
+    sample_table = pd.concat(sample_table)
 
     # Note: this refers to the TOTAL # of templates, i.e. the factor 2x for
     # the two parallel RT-PCR reactions
     sample_table['n templates'] = sample_table['viral load'] * 0.4 / 12 * 2
-
-    if not include_empty:
-        ind = [i for i, sample in sample_table.iterrows()
-               if (sample[['F1', 'F2', 'F3', 'F4', 'F5', 'F6']] != 'miss').any()]
-        sample_table = sample_table.loc[ind]
-
-    if patients is not None:
-        sample_table = sample_table.loc[sample_table.loc[:, 'patient'].isin(patients)]
 
     return [Sample(val) for x, val in sample_table.iterrows()]

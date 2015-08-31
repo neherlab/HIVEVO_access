@@ -55,6 +55,14 @@ def get_table_filename(kind, format='tsv'):
     return table_folder+kind+'.'+format
 
 
+def get_sample_table_filenames(pnames=None):
+    import glob
+    if pnames is None:
+        return glob.glob(table_folder+'samples_*.tsv')
+    else:
+        return [table_folder+'samples_'+pname+'.tsv' for pname in pnames]
+
+
 def get_custom_reference_filename(reference, format='fasta'):
     '''Get the filename of a custom reference sequence'''
     filename = reference
