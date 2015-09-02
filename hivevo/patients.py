@@ -5,6 +5,7 @@ date:       25/04/2015
 content:    Data access module HIV patients.
 '''
 # Modules
+from collections import Counter
 from operator import itemgetter
 import numpy as np
 import pandas as pd
@@ -106,8 +107,8 @@ class Patient(pd.Series):
     @property
     def ysi(self):
         return self.times(unit='year')
-    
-    
+
+
     def times(self, unit='days'):
         '''Get the times from transmission'''
         delta_days = [float(s['days since infection']) for s in self.samples]
@@ -189,7 +190,7 @@ class Patient(pd.Series):
 
     def get_allele_count_trajectories(self, region, safe=False, type='nuc', **kwargs):
         '''Get the allele count trajectories from files
-        
+
         Args:
           region (str): region to study, a fragment or a genomic feature (e.g. V3)
           type (str): 'nuc' for nucleotides, 'aa' for amino acids
@@ -223,9 +224,32 @@ class Patient(pd.Series):
         return act
 
 
+    def get_insertion_trajectories(self, region, **kwargs):
+        '''Get insertion trajectories
+
+        Returns:
+           ict (pd.Series): multiindexed array of insertion counts
+
+        To manipulate the result, pandas methods are recommended, e.g.
+
+        ict_matrix = ict.unstack('DSI').fillna(0).T
+        '''
+        coordinates = self._annotation_to_fragment_indices(region)
+        ict = Counter()
+        for tmp_sample in self.samples:
+            time = tmp_sample['days since infection']
+            ic = tmp_sample.get_insertions(coordinates, **kwargs)
+            for (position, insertion), value in ic.iteritems():
+                ict[(time, position, insertion)] = value
+        ict = pd.Series(ict, name='insertions')
+        if len(ict):
+            ict.index.names = ['DSI', 'position', 'insertion']
+        return ict
+
+
     def get_allele_frequency_trajectories(self, region, safe=False,error_rate = 2e-3, type='nuc',  **kwargs):
         '''Get the allele count trajectories from files
-        
+
         Args:
           region (str): region to study, a fragment or a genomic feature (e.g. V3)
           type (str): 'nuc' for nucleotides, 'aa' for amino acids
@@ -337,7 +361,7 @@ class Patient(pd.Series):
         mask_index = len(tmp_alpha)-1
         cons_ind = aft[0].argmax(axis=0)
         cons_ind[aft.mask[0].max(axis=0)] = mask_index
-    
+
         for af_later in aft[1:]:
             cons_ind_later = af_later.argmax(axis=0)
             cons_ind_later[af_later.mask.max(axis=0)] = mask_index
@@ -411,7 +435,7 @@ class Patient(pd.Series):
 
         elif roi == "genomewide":
             return np.vstack((genomewide_map.T, [genomewide_map[:,1]])).T            
-        
+
         else:
             try:
                 start, stop = map(int, roi)
@@ -460,7 +484,7 @@ class Patient(pd.Series):
 
     def get_hla_type(self, MHC=1):
         '''Get a list with all HLA loci
-        
+
         Parameters:
            MHC (None/1/2): MHC class I/II only, or all
         '''
@@ -484,7 +508,7 @@ class Patient(pd.Series):
                          kind='mhci=80',
                         ):
         '''Get list of CTL epitopes
-        
+
         Parameters:
            regions (list): restrict to epitopes within these regions
            kind (str): LANL/epitoolkit/mhci=<n>, where <n> is the cutoff for

@@ -117,6 +117,17 @@ def get_allele_counts_filename(samplename, region,
     return filename
 
 
+def get_insertions_filename(samplename, region):
+    '''Get the filename of the insertions for a patient sample'''
+    filename = ('insertions_'+
+                samplename+'_'+
+                region+
+                '.pickle')
+    filename = 'insertions/'+filename
+    filename = root_data_folder+filename
+    return filename
+
+
 def get_allele_cocounts_filename(samplename, region,
                                type='nuc',
                                format='npy'):

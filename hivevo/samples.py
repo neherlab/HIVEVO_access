@@ -5,6 +5,7 @@ date:       01/05/15
 content:    Description module for HIV patient samples.
 '''
 # Modules
+from collections import Counter
 import numpy as np
 import pandas as pd
 import os
@@ -143,6 +144,33 @@ class Sample(pd.Series):
             cov = ac.sum(axis=0)
             ac.mask = np.repeat([cov<cov_min], ac.shape[0], axis=0)
         return ac
+
+
+    def get_insertions(self, coordinates, add=True, VERBOSE=0, **kwargs):
+        '''Get insertions from this sample'''
+        from .filenames import get_insertions_filename
+        ic = Counter()
+        for fragment, coord in coordinates.iteritems():
+            fname = get_insertions_filename(self.name, fragment)
+            if not os.path.isfile(fname):
+                continue
+            coordd = dict(np.array(coord).T[:, ::-1])
+            try:
+                tmp_ic = pd.read_pickle(fname)
+            except IOError:
+                continue
+            for (position, insertion), value in tmp_ic.iteritems():
+                if position not in coordd:
+                    continue
+                key = (coordd[position], insertion)
+                if add:
+                    ic[key] += value
+                else:
+                    ic[key] = max(ic[key], value)
+        ic = pd.Series(ic, name='insertions')
+        if len(ic):
+            ic.index.names = ['position', 'insertion']
+        return ic
 
 
     def get_allele_frequencies(self, coordinates, add=True, cov_min = 100, VERBOSE=0, type='nuc', **kwargs):
