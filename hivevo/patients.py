@@ -79,12 +79,6 @@ class Patient(pd.Series):
 
 
     @property
-    def transmission_date(self):
-        '''The most likely time of transmission'''
-        return self['infect date best']
-
-
-    @property
     def viral_load(self):
         return self._viral_load
 
