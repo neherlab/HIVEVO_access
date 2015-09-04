@@ -613,7 +613,7 @@ class Patient(pd.Series):
            region (str or ROI): if a string, it indicates a genomic region
            (e.g. V3) and the haplotype alignment is read from file. If a
            ROI, i.e. a triple (region, start, end), it extracts the haplotypes
-           de novo from the BAM files.
+           de novo from the BAM files (TODO).
 
         TODO: ROI de novo computation not implemented yet.
         '''
@@ -625,3 +625,25 @@ class Patient(pd.Series):
 
         else:
             raise NotImplementedError
+
+
+    def get_haplotype_alignment_for_insertion(self, position, length=40):
+        '''Get alignment of minor haplotypes close to an insertion'''
+        def find_closest_alignment_filename():
+            import os
+            from .filenames import get_haplotype_alignment_filename
+            for dist in xrange(10000):
+                for start in [position - dist, position + dist]:
+                    region = 'insertion_'+str(start)+'-'+str(start+length)
+                    fn = get_haplotype_alignment_filename(self.name, region, 'fasta')
+                    if os.path.isfile(fn):
+                        return {'start': start,
+                                'filename': fn}
+            else:
+                raise IOError('No alignment found')
+
+        from Bio import AlignIO
+        datum = find_closest_alignment_filename()
+        datum['ali'] = AlignIO.read(datum['filename'], 'fasta')
+
+        return datum

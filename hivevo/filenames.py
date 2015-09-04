@@ -174,7 +174,12 @@ def get_coordinate_map_filename(pname, fragment, refname='HXB2', format='tsv'):
 
 def get_haplotype_alignment_filename(pname, region, format='fasta'):
     '''Get the filenae of a haplotype alignment'''
-    filename = 'haplotype_alignment_'+pname+'_'+region+'.'+format
-    filename = root_data_folder+'alignments/'+filename
+    if region[:len('insertion_')] == 'insertion_':
+        filename = 'haplotype_alignment_'+pname+'_'+region[len('insertion_'):]+'.'+format
+        filename = 'insertions/'+filename
+    else:
+        filename = 'haplotype_alignment_'+pname+'_'+region+'.'+format
+        filename = 'alignments/'+filename
+    filename = root_data_folder+filename
     return filename
 
