@@ -1,8 +1,8 @@
 id	patient	days since infection	viral load	CD4+ count	templates approx	dilutions	F1	F2	F3	F4	F5	F6	F1_coverage	F2_coverage	F3_coverage	F4_coverage	F5_coverage	F6_coverage
-p11_sample_1	p11	337	12700	850	846.6666666667	1:100 (2/2)	ok	ok	ok	ok	ok	ok
-p11_sample_2	p11	460	18100	845	1206.6666666667	1:100 (1/2)	ok	ok	ok	ok	ok	ok
-p11_sample_3	p11	700	28000	690	1866.6666666667	1:10 (1/2)	ok	ok	ok	ok	ok	ok
-p11_sample_4	p11	1154	13000	566	866.6666666667	1:100 (2/2)	ok	ok	ok	ok	ok	ok
+p11_sample_1	p11	337	12700	850	846.66666667	1:100 (2/2)	ok	ok	ok	ok	ok	ok
+p11_sample_2	p11	460	18100	845	1206.66666667	1:100 (1/2)	ok	ok	ok	ok	ok	ok
+p11_sample_3	p11	700	28000	690	1866.66666667	1:10 (1/2)	ok	ok	ok	ok	ok	ok
+p11_sample_4	p11	1154	13000	566	866.66666667	1:100 (2/2)	ok	ok	ok	ok	ok	ok
 p11_sample_5	p11	1524	63000	663	4200	1:100 (2/2)	ok	ok	ok	ok	ok	ok
-p11_sample_6	p11	1878	476000	423	31733.3333333333	1:1000 (1/2)	ok	ok	ok	ok	miss	ok
-p11_sample_7	p11	2171	28000	251	1866.6666666667	1:1000 (2/2)	ok	ok	ok	ok	ok	ok
+p11_sample_6	p11	1878	476000	423	31733.333333	1:1000 (1/2)	ok	ok	ok	ok	miss	ok
+p11_sample_7	p11	2171	28000	251	1866.66666667	1:1000 (2/2)	ok	ok	ok	ok	ok	ok

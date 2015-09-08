@@ -1,9 +1,9 @@
 id	patient	days since infection	viral load	CD4+ count	templates approx	dilutions	F1	F2	F3	F4	F5	F6	F1_coverage	F2_coverage	F3_coverage	F4_coverage	F5_coverage	F6_coverage
-p9_sample_1	p9	180	2300	720	153.3333333333	1:10 (2/2)	ok	ok	ok	ok	ok	ok
-p9_sample_2	p9	301	2000		133.3333333333	1:10 (2/2)	ok	ok	ok	ok	ok	ok
-p9_sample_3	p9	887	1000	870	66.6666666667	1:10 (0/2)	ok	ok	ok	ok	ok	ok
-p9_sample_4	p9	1267	1100	1000	73.3333333333	1:10 (2/2)	ok	ok	ok	miss	miss	ok
-p9_sample_5	p9	1889	3900	1094	260	1:10 (2/2)	ok	ok	ok	ok	ok	ok
+p9_sample_1	p9	180	2300	720	153.3333333	1:10 (2/2)	ok	ok	ok	ok	ok	ok
+p9_sample_2	p9	301	2000		133.3333333	1:10 (2/2)	ok	ok	ok	ok	low diversity	ok
+p9_sample_3	p9	887	1000	870	66.6666667	1:10 (0/2)	ok	ok	ok	ok	low diversity	ok
+p9_sample_4	p9	1267	1100	1000	73.3333333	1:10 (2/2)	ok	ok	ok	miss	miss	ok
+p9_sample_5	p9	1889	3900	1094	260	1:10 (2/2)	ok	ok	ok	ok	low diversity	ok
 p9_sample_6	p9	2288	120000	1150	8000	1:100 (1/2)	ok	ok	ok	ok	ok	ok
 p9_sample_7	p9	2682	28800	669	1920	1:1000 (1/2)	ok	ok	ok	ok	miss	ok
-p9_sample_8	p9	3029	35000	158	2333.3333333333	1:100 (2/2)	ok	ok	ok	ok	ok	ok
+p9_sample_8	p9	3029	35000	158	2333.3333333	1:100 (2/2)	ok	ok	ok	ok	ok	ok
