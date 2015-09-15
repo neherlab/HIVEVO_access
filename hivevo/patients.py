@@ -418,7 +418,7 @@ class Patient(pd.Series):
                                         roi coordinates in third column
         '''
         from .filenames import get_coordinate_map_filename
-        coo_fn = get_coordinate_map_filename(self.name, 'genomewide', refname=refname)
+        coo_fn = get_coordinate_map_filename(self.name, refname=refname)
         genomewide_map = np.loadtxt(coo_fn, dtype=int)
 
         if roi in self.annotation:

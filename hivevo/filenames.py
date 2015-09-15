@@ -165,9 +165,9 @@ def get_initial_reference_filename(pname, fragment, format='fasta'):
     return filename
 
 
-def get_coordinate_map_filename(pname, fragment, refname='HXB2', format='tsv'):
+def get_coordinate_map_filename(pname, refname='HXB2', format='tsv'):
     '''Get the filename of the map to HXB2 or other ref coordinates'''
-    filename = 'coordinate_map_'+pname+'_'+refname+'_'+fragment+'.'+format
+    filename = 'coordinate_map_'+pname+'_'+refname+'_genomewide.'+format
     filename = root_data_folder+'coordinate_maps/'+filename
     return filename
 
