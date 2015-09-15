@@ -1,13 +1,13 @@
 id	patient	days since infection	viral load	CD4+ count	templates approx	dilutions	F1	F2	F3	F4	F5	F6	F1_coverage	F2_coverage	F3_coverage	F4_coverage	F5_coverage	F6_coverage
-p1_sample_1	p1	49	499	537	33.2666667	1:10 (0/2)	ok	ok	ok	ok	ok	ok
-p1_sample_2	p1	489	6900	545	460	1:100 (1/2)	ok	ok	ok	ok	end lower	ok
-p1_sample_3	p1	1011	5700	600	380	1:100 (1/2)	ok	ok	ok	ok	low diversity	ok
-p1_sample_4	p1	1181	11000	0	733.333333	1:10 (2/2)	ok	ok	ok	ok	low diversity	ok
-p1_sample_5	p1	1209	11000	560	733.333333	1:100 (1/2)	ok	ok	ok	ok	low diversity	ok
-p1_sample_6	p1	1320	6600	510	440	1:100 (2/2)	ok	ok	ok	ok	low diversity	ok
-p1_sample_7	p1	1788	9800	530	653.333333	1:100 (1/2)	ok	ok	ok	ok	low diversity	ok
-p1_sample_8	p1	2230	39000	450	2600	1:100 (2/2)	ok	ok	ok	ok	low	ok
-p1_sample_9	p1	2505	292000	430	19466.6666667	1:1000 (2/2)	ok	ok	ok	ok	low	ok
-p1_sample_10	p1	2566	240000	580	16000	1:10000 (1/2)	ok	ok	ok	ok	low	ok
-p1_sample_11	p1	2849	501000	420	33400	1:1000 (2/2)	ok	ok	ok	ok	ok	ok
-p1_sample_12	p1	2923	648000	340	43200	1:10000 (2/2)	ok	ok	ok	ok	ok	ok
+p1_sample_1	p1	49	499	537	33.2666667	1:10 (0/2)	ok	ok	ok	ok	ok	ok	26727	14552	23811	31910	4592	8499
+p1_sample_2	p1	489	6900	545	460.0	1:100 (1/2)	ok	ok	ok	ok	end lower	ok	6108	41446	6020	91767	274	26606
+p1_sample_3	p1	1011	5700	600	380.0	1:100 (1/2)	ok	ok	ok	ok	low diversity	ok	24651	24046	41170	44892	4120	2861
+p1_sample_4	p1	1181	11000	0	733.333333	1:10 (2/2)	ok	ok	ok	ok	low diversity	ok	20832	51492	42740	30537	951	24718
+p1_sample_5	p1	1209	11000	560	733.333333	1:100 (1/2)	ok	ok	ok	ok	low diversity	ok	24728	24664	77505	56486	1342	10570
+p1_sample_6	p1	1320	6600	510	440.0	1:100 (2/2)	ok	ok	ok	ok	low diversity	ok	65517	52103	32231	226199	3669	29180
+p1_sample_7	p1	1788	9800	530	653.333333	1:100 (1/2)	ok	ok	ok	ok	low diversity	ok	31898	2927	36557	2462	975	1723
+p1_sample_8	p1	2230	39000	450	2600.0	1:100 (2/2)	ok	ok	ok	ok	low	ok	152535	214437	153444	290064	2305	166923
+p1_sample_9	p1	2505	292000	430	19466.6666667	1:1000 (2/2)	ok	ok	ok	ok	low	ok	16890	15263	9839	28125	714	24893
+p1_sample_10	p1	2566	240000	580	16000.0	1:10000 (1/2)	ok	ok	ok	ok	low	ok	108683	88683	107479	161563	8496	114572
+p1_sample_11	p1	2849	501000	420	33400.0	1:1000 (2/2)	ok	ok	ok	ok	ok	ok	6939	7528	14675	191482	41584	137629
+p1_sample_12	p1	2923	648000	340	43200.0	1:10000 (2/2)	ok	ok	ok	ok	ok	ok	3665	5521	6051	6295	6242	5943
