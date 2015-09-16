@@ -32,13 +32,15 @@ class Patient(pd.Series):
                  '_n_templates_viral_load',
                  'initial_sequence',
                  'pos_to_feature',
+                 'reference',
+                 'annotation',
                 ]
 
     def __init__(self, *args, **kwargs):
         '''Initialize a patient with all his samples'''
         include_cell = kwargs.pop('include_cell', False)
         super(Patient, self).__init__(*args, **kwargs)
-        self.samples = sorted(load_samples_sequenced(patients=[self.name]), 
+        self.samples = sorted(load_samples_sequenced(patients=[self.name]),
                               key=itemgetter('days since infection'))
         self._cd4 = [x['CD4+ count'] for x in self.samples]
         self._viral_load = [x['viral load'] for x in self.samples]
@@ -53,6 +55,8 @@ class Patient(pd.Series):
         # translate genbank encoded sequence features into a dictionary
         self.annotation = {x.qualifiers['note'][-1]: x for x in self.reference.features}
         self._initial_consensus_noinsertions()
+
+        # TODO: this is experimental
         self.positions_to_features()
 
 
@@ -152,7 +156,7 @@ class Patient(pd.Series):
     def _annotation_to_fragment_indices(self, anno):
         '''
         returns coordinates of a region specified in the annotation
-        in terms of the fragments F1 to F5. This is needed to extract 
+        in terms of the fragments F1 to F5. This is needed to extract
         region specific allele counts, frequencies etc.
         returns a dict containing 'length', 'start' (of the region in the genome)
         and for each fragment involved 'F1': (indices in the region of interest, indices on the fragment)
@@ -162,16 +166,26 @@ class Patient(pd.Series):
         coordinates['start'] = min(region_indices)
         coordinates['length'] = len(region_indices)
         fragments = ['F'+str(i) for i in xrange(1,7)]
-        if anno not in fragments:
-            for frag in fragments: # loop over fragments and extract the indices of the region on this fragment
-                frag_ind = set(self._region_to_indices(frag))       # indices of the fragment
-                region_indices_on_fragment = sorted(frag_ind.intersection(region_indices))  # intersection of region and fragment positions
-                if len(region_indices_on_fragment): # attach indices in region and on fragment
-                    anno_indices_self = np.arange(coordinates['length'])[np.in1d(region_indices, region_indices_on_fragment)]
-                    coordinates[frag] = (anno_indices_self, 
-                                       np.array(region_indices_on_fragment)- int(self.annotation[frag].location.start))
-        else: # if requested region is a fragment, return only this fragment
+
+        # if requested region is a fragment, return only this fragment
+        if anno in fragments:
             coordinates[anno] = (np.arange(coordinates['length']), np.arange(coordinates['length']))
+
+        # loop over fragments and extract the indices of the region on this fragment
+        else:
+            for frag in fragments:
+
+                # indices of the fragment
+                frag_ind = set(self._region_to_indices(frag))
+
+                # intersection of region and fragment positions
+                region_indices_on_fragment = sorted(frag_ind.intersection(region_indices))
+
+                # attach indices in region and on fragment
+                if len(region_indices_on_fragment):
+                    anno_indices_self = np.arange(coordinates['length'])[np.in1d(region_indices, region_indices_on_fragment)]
+                    coordinates[frag] = (anno_indices_self,
+                                       np.array(region_indices_on_fragment)- int(self.annotation[frag].location.start))
         return coordinates
 
 
@@ -268,7 +282,7 @@ class Patient(pd.Series):
         else:
             raise ValueError('Data type not understood')
 
-        aft = np.ma.array([tmp_sample.get_allele_frequencies(coordinates, type=type, **kwargs) 
+        aft = np.ma.array([tmp_sample.get_allele_frequencies(coordinates, type=type, **kwargs)
                           for tmp_sample in self.samples], hard_mask=True, shrink=False)
         # set very low frequencies to zero, these are likely sequencing errors
         aft[aft<error_rate]=0
@@ -283,11 +297,11 @@ class Patient(pd.Series):
                         or self.pos_to_feature[pos]['gene']>1
                         for pos in self.annotation[region]])
         else:
-            print region,"is not a valid protein or gene"
+            print region, "is not a valid protein or gene"
             return None
 
 
-    def get_gaps_by_codon(self, region, pad=0, threshold = 0.1):
+    def get_gaps_by_codon(self, region, pad=0, threshold=0.1):
         if region in self.annotation and self.annotation[region].type in ['gene', 'protein']:
             aft = self.get_allele_frequency_trajectories(region)
             gap_index = list(alpha).index('-')
@@ -301,7 +315,7 @@ class Patient(pd.Series):
             return None
 
 
-    def get_syn_mutations(self, region, mask_constrained = True):
+    def get_syn_mutations(self, region, mask_constrained=True):
         from itertools import izip
         if region in self.annotation and self.annotation[region].type in ['gene', 'protein']:
             try:
@@ -318,9 +332,9 @@ class Patient(pd.Series):
                     tmp[gaps]='N'
                     consensi.append(tmp)
 
-                cons_aa = np.array([np.fromstring(Seq.translate(''.join(cons)), 
+                cons_aa = np.array([np.fromstring(Seq.translate(''.join(cons)),
                                    dtype='|S1') for cons in consensi])
-                no_substitution = np.repeat(np.array([len(np.unique(col[ind]))==1 
+                no_substitution = np.repeat(np.array([len(np.unique(col[ind]))==1
                                 for ind, col in izip(aft_valid.T[::3], cons_aa.T)], dtype=bool), 3)
 
                 syn_muts = np.zeros(aft.shape[1:], dtype=bool)
@@ -413,8 +427,8 @@ class Patient(pd.Series):
             refname --  reference to compare to
             in_patient -- specifies whether the (start, end) refers to reference or patient coordinates
         returns:
-            a (len(roi), 3) array with reference coordinates in first column, 
-                                        patient coordinates in second 
+            a (len(roi), 3) array with reference coordinates in first column,
+                                        patient coordinates in second
                                         roi coordinates in third column
         '''
         from .filenames import get_coordinate_map_filename
@@ -428,7 +442,7 @@ class Patient(pd.Series):
             return np.vstack((genomewide_map[ind].T, [roi_indices])).T
 
         elif roi == "genomewide":
-            return np.vstack((genomewide_map.T, [genomewide_map[:,1]])).T            
+            return np.vstack((genomewide_map.T, [genomewide_map[:,1]])).T
 
         else:
             try:
@@ -443,23 +457,63 @@ class Patient(pd.Series):
 
     # TODO: the following is experimental. was meant as a way to easily get an
     # idea what kind of stuff a site is involved in
-    def positions_to_features(self):
+    def positions_to_features(self, sources=['annotations']):
         '''
         map of positions to features, including the number of proteins, RNA, etc this pos is part of
+
+        Parameters:
+           sources: list of sources to take the features from. Allowed sources are
+           'annotations', 'shape'.
         '''
-        self.pos_to_feature = [{'gene':0, 'RNA':0, 'LTR':0, 'codons':[], 'protein_codon':[]} 
-                                for pos in xrange(len(self.reference))]
-        for fname, feature in self.annotation.iteritems():
-            for ii, pos in enumerate(feature):
-                if feature.type=='gene':
-                    self.pos_to_feature[pos]['gene']+=1
-                    self.pos_to_feature[pos]['codons'].append((fname, ii//3, ii%3))
-                elif feature.type=='protein':
-                    self.pos_to_feature[pos]['protein_codon'].append((fname, ii//3, ii%3))
-                elif 'LTR' in fname:
-                    self.pos_to_feature[pos]['LTR']+=1
-                elif feature.type=='RNA_structure':
-                    self.pos_to_feature[pos]['RNA']+=1
+        self.pos_to_feature = [{} for nuc in self.reference]
+
+        # Add info from genomic annotations
+        if 'annotations' in sources:
+            for posfea in self.pos_to_feature:
+                posfea['gene'] = 0
+                posfea['RNA'] = 0
+                posfea['LTR'] = 0
+                posfea['codons'] = []
+                posfea['protein_codon'] = []
+
+            for fname, feature in self.annotation.iteritems():
+                for ii, pos in enumerate(feature):
+                    if feature.type=='gene':
+                        self.pos_to_feature[pos]['gene']+=1
+                        self.pos_to_feature[pos]['codons'].append((fname, ii//3, ii%3))
+                    elif feature.type=='protein':
+                        self.pos_to_feature[pos]['protein_codon'].append((fname, ii//3, ii%3))
+                    elif 'LTR' in fname:
+                        self.pos_to_feature[pos]['LTR']+=1
+                    elif feature.type=='RNA_structure':
+                        self.pos_to_feature[pos]['RNA']+=1
+
+        # Add info from SHAPE (Siegfried et al. 2014)
+        if 'shape' in sources:
+            for posfea in self.pos_to_feature:
+                posfea['RNA pairing probability'] = None
+                posfea['RNA partner'] = None
+
+            from .external import load_pairing_probability_NL43
+            pp = load_pairing_probability_NL43()
+            m = self.map_to_external_reference('genomewide', 'NL4-3')[:, :2]
+            md = dict(m)
+            for pos_ref, pos_pat in m:
+                if pos_ref in pp.index:
+                    #NOTE: more than one pairing is reported
+                    tmp = pp.loc[pos_ref]
+                    if isinstance(tmp, pd.Series):
+                        partner = tmp['partner']
+                        prob = tmp['probability']
+                    else:
+                        tmp = tmp.set_index('partner')['probability']
+                        partner = tmp.argmax()
+                        prob = tmp.loc[partner]
+                    self.pos_to_feature[pos_pat]['RNA pairing probability'] = prob
+                    if partner in md:
+                        self.pos_to_feature[pos_pat]['RNA partner'] = md[partner]
+                    else:
+                        self.pos_to_feature[pos_pat]['RNA partner'] = 'missing'
 
 
     def get_fragment_depth(self, pad=False, limit_to_dilution = False):

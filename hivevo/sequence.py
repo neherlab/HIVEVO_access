@@ -2,7 +2,7 @@
 '''
 author:     Fabio Zanini
 date:       20/05/15
-content:    Support module for nucleid and amino acid sequences.
+content:    Support module for nucleic and amino acid sequences.
 '''
 # Modules
 from numpy import array
