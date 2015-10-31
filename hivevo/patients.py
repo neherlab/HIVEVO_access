@@ -421,7 +421,7 @@ class Patient(pd.Series):
 
     def map_to_external_reference(self, roi, refname='HXB2', in_patient=True):
         '''
-        return a map of positions in the patient to a reference genomewide
+        Map positions in the patient to a reference genomewide
         Args:
             roi  --  region of interest given as a string or a tuple (start, end)
             refname --  reference to compare to
@@ -436,7 +436,7 @@ class Patient(pd.Series):
         genomewide_map = np.loadtxt(coo_fn, dtype=int)
 
         if roi in self.annotation:
-            roi_pos = np.array([x for x in self.annotation[roi]], dtype = int)
+            roi_pos = np.array([x for x in self.annotation[roi]], dtype=int)
             ind = np.in1d(genomewide_map[:,1], roi_pos)
             roi_indices = np.in1d(roi_pos, genomewide_map[:,1]).nonzero()[0]
             return np.vstack((genomewide_map[ind].T, [roi_indices])).T
@@ -453,6 +453,49 @@ class Patient(pd.Series):
                                   [genomewide_map[start_ind:stop_ind, in_patient] - start])).T
             except:
                 raise ValueError("ROI not understood")
+
+
+    def map_to_external_reference_aminoacids(self, roi, refname='HXB2', in_patient=True):
+        '''Map positions in the patient to a reference, for amino acids in a protein region
+
+        Args:
+            roi -- region of interest, a string or a triple (protein, start, stop)
+            refname --  reference to compare to
+            in_patient -- specifies whether the (start, end) refers to reference or patient coordinates
+
+        returns:
+            a (len(roi), 2) array with reference protein coordinates in first column,
+                                       patient protein coordinates in second
+        '''
+        from .filenames import get_coordinate_map_filename, get_custom_reference_filename
+        coo_fn = get_coordinate_map_filename(self.name, refname=refname)
+        genomewide_map = np.loadtxt(coo_fn, dtype=int)
+
+        if roi in self.annotation:
+            region = roi
+        else:
+            region = roi[0]
+
+        # translate genbank encoded sequence features into a dictionary
+        seq = SeqIO.read(get_custom_reference_filename(refname, format='gb'), format='genbank')
+        ref_annotation = {x.qualifiers['note'][-1]:x for x in seq.features}
+
+        ref_region_pos = list(ref_annotation[region])
+        pat_region_pos = list(self.annotation[region])
+
+        # this is asymmetric because we want the region as defined in the patient
+        ind = genomewide_map[np.in1d(genomewide_map[:,1], pat_region_pos)]
+
+        # take protein coordinates
+        ind = np.array([(ref_region_pos.index(r), pat_region_pos.index(p)) for r, p in ind[::3]]) // 3
+        # NOTE: because the genomewide map may have non-codon gaps, we should check the other two
+        # codon positions, but this might give rise to incongruities. It's ok for usual cases
+
+        if roi not in self.annotation:
+            start, stop = map(int, roi[1:])
+            ind = ind[(ind[:, in_patient] >= start) & (ind[:, in_patient] < stop)]
+
+        return ind
 
 
     # TODO: the following is experimental. was meant as a way to easily get an
