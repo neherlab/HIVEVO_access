@@ -53,7 +53,7 @@ class HIVreference(object):
 
 
     def get_ungapped(self, threshold=0.05):
-        return self.af[-1,:]<0.05
+        return self.af[-1,:] < 0.05
 
 
     def get_entropy_quantiles(self, q):
@@ -72,9 +72,9 @@ class HIVreference(object):
                         or a (3, len(region)) array with the reference coordinates in the first column
                         this is the output of Patient.map_to_external_reference
         '''
-        if len(map_to_ref.shape)==2:
-            return self.entropy[map_to_ref[:,0]]
-        elif len(map_to_ref.shape)==1:
+        if len(map_to_ref.shape) == 2:
+            return self.entropy[map_to_ref[:, 0]]
+        elif len(map_to_ref.shape) == 1:
             return self.entropy[map_to_ref]
 
 
@@ -114,8 +114,7 @@ class HIVreferenceAminoacid(object):
 
         seq = SeqIO.read(get_custom_reference_filename(self.refname, format='gb'), format='genbank')
         # translate genbank encoded sequence features into a dictionary
-        annotation = {x.qualifiers['note'][-1]:x for x in self.seq.features}
-
+        annotation = {x.qualifiers['note'][-1]:x for x in seq.features}
         self.seq = annotation[region].extract(seq)
 
         fn = get_subtype_reference_alignment_filename(region=region,
@@ -142,7 +141,7 @@ class HIVreferenceAminoacid(object):
 
 
     def get_ungapped(self, threshold=0.05):
-        return self.af[-1,:]<0.05
+        return self.af[-1,:] < 0.05
 
 
     def get_entropy_quantiles(self, q):
@@ -151,3 +150,17 @@ class HIVreferenceAminoacid(object):
         return {i: {'range':(thresholds[i],thresholds[i+1]),
                     'ind':np.where((self.entropy>=thresholds[i])*(self.entropy<thresholds[i+1]))[0]}
                for i in range(q)}
+
+
+    def get_entropy_in_patient_region(self, map_to_ref):
+        '''
+        returns entropy in a specific regions defined by a set of indices in the reference
+        params:
+        map_to_ref  --  either a one dimensional vector specifying indices in the reference
+                        or a (2, len(region)) array with the reference coordinates in the first column
+                        this is the output of Patient.map_to_external_reference_aminoacids
+        '''
+        if len(map_to_ref.shape) == 2:
+            return self.entropy[map_to_ref[:, 0]]
+        elif len(map_to_ref.shape) == 1:
+            return self.entropy[map_to_ref]

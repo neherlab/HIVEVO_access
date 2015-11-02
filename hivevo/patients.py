@@ -487,9 +487,17 @@ class Patient(pd.Series):
         ind = genomewide_map[np.in1d(genomewide_map[:,1], pat_region_pos)]
 
         # take protein coordinates
-        ind = np.array([(ref_region_pos.index(r), pat_region_pos.index(p)) for r, p in ind[::3]]) // 3
         # NOTE: because the genomewide map may have non-codon gaps, we should check the other two
         # codon positions, but this might give rise to incongruities. It's ok for usual cases
+        ind_tmp = []
+        for r, p in ind[::3]:
+            try:
+                r = ref_region_pos.index(r)
+                p = pat_region_pos.index(p)
+            except ValueError:
+                continue
+            ind_tmp.append([r, p])
+        ind = np.array(ind_tmp, int) // 3
 
         if roi not in self.annotation:
             start, stop = map(int, roi[1:])
