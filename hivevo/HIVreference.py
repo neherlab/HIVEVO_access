@@ -25,11 +25,15 @@ class HIVreference(object):
         self.annotation = {x.qualifiers['note'][-1]:x for x in self.seq.features}
 
         if load_alignment:
-            self.aln = np.array(AlignIO.read(get_subtype_reference_alignment_filename(subtype=subtype), 'fasta'))
+            fn = get_subtype_reference_alignment_filename(subtype=subtype,
+                                                          refname=refname)
+            self.aln = np.array(AlignIO.read(fn, 'fasta'))
             self.calc_nucleotide_frequencies()
 
         else:
-            self.af = np.load(get_subtype_reference_allele_frequencies_filename(subtype=subtype))
+            fn = get_subtype_reference_allele_frequencies_filename(subtype=subtype,
+                                                                   refname=refname)
+            self.af = np.load(fn)
 
         self.consensus_indices = np.argmax(self.af, axis=0)
         self.consensus = alpha[self.consensus_indices]
@@ -86,9 +90,9 @@ class HIVreference(object):
                         or a (3, len(region)) array with the reference coordinates in the first column
                         this is the output of Patient.map_to_external_reference
         '''
-        if len(map_to_ref.shape)==2:
-            return self.consensus[map_to_ref[:,0]]
-        elif len(map_to_ref.shape)==1:
+        if len(map_to_ref.shape) == 2:
+            return self.consensus[map_to_ref[:, 0]]
+        elif len(map_to_ref.shape) == 1:
             return self.consensus[map_to_ref]
 
 
@@ -100,9 +104,9 @@ class HIVreference(object):
                         or a (3, len(region)) array with the reference coordinates in the first column
                         this is the output of Patient.map_to_external_reference
         '''
-        if len(map_to_ref.shape)==2:
-            return self.consensus_indices[map_to_ref[:,0]]
-        elif len(map_to_ref.shape)==1:
+        if len(map_to_ref.shape) == 2:
+            return self.consensus_indices[map_to_ref[:, 0]]
+        elif len(map_to_ref.shape) == 1:
             return self.consensus_indices[map_to_ref]
 
 
@@ -118,6 +122,7 @@ class HIVreferenceAminoacid(object):
         self.seq = annotation[region].extract(seq)
 
         fn = get_subtype_reference_alignment_filename(region=region,
+                                                      refname=refname,
                                                       subtype=self.subtype,
                                                       type='aa')
         self.aln = np.array(AlignIO.read(fn, 'fasta'))
@@ -164,3 +169,31 @@ class HIVreferenceAminoacid(object):
             return self.entropy[map_to_ref[:, 0]]
         elif len(map_to_ref.shape) == 1:
             return self.entropy[map_to_ref]
+
+
+    def get_consensus_in_patient_region(self, map_to_ref):
+        '''
+        returns consensus in a specific regions defined by a set of indices in the reference
+        params:
+        map_to_ref  --  either a one dimensional vector specifying indices in the reference
+                        or a (2, len(region)) array with the reference coordinates in the first column
+                        this is the output of Patient.map_to_external_reference_aminoacids
+        '''
+        if len(map_to_ref.shape) == 2:
+            return self.consensus[map_to_ref[:, 0]]
+        elif len(map_to_ref.shape) == 1:
+            return self.consensus[map_to_ref]
+
+
+    def get_consensus_indices_in_patient_region(self, map_to_ref):
+        '''
+        returns consensus_indices in a specific regions defined by a set of indices in the reference
+        params:
+        map_to_ref  --  either a one dimensional vector specifying indices in the reference
+                        or a (2, len(region)) array with the reference coordinates in the first column
+                        this is the output of Patient.map_to_external_reference_aminoacids
+        '''
+        if len(map_to_ref.shape) == 2:
+            return self.consensus_indices[map_to_ref[:, 0]]
+        elif len(map_to_ref.shape) == 1:
+            return self.consensus_indices[map_to_ref]

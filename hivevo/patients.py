@@ -376,7 +376,7 @@ class Patient(pd.Series):
             ind_Ns = (cons_ind == mask_index) & (cons_ind_later != mask_index)
             cons_ind[ind_Ns] = cons_ind_later[ind_Ns]
 
-        if region=='genomewide' and type=='nuc':
+        if region == 'genomewide' and type == 'nuc':
             self.initial_indices = cons_ind
             self.initial_sequence = alpha[cons_ind]
         else:
@@ -384,12 +384,12 @@ class Patient(pd.Series):
 
     def get_initial_indices(self, region, type='nuc'):
         if type=='nuc':
-            if region=='genomewide':
+            if region == 'genomewide':
                 return self.initial_indices
             elif region in self.annotation:
                 return np.array([self.initial_indices[pos] for pos in self.annotation[region]])
             else:
-                print "Not a valid annotation:",region
+                print "Not a valid annotation:", region
                 return None
         elif type=='aa':
             return self._initial_consensus_noinsertions(region, type=type)
