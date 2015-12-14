@@ -57,7 +57,7 @@ class Patient(pd.Series):
         self._initial_consensus_noinsertions()
 
         # TODO: this is experimental
-        self.positions_to_features()
+        self.positions_to_features(sources=['annotations', 'shape'])
 
 
     @classmethod
