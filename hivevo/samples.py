@@ -221,11 +221,17 @@ class Sample(pd.Series):
         cov      -- coverage at the pairs
         af1p     -- single nucleotide frequencies
         '''
+        # NOTE: because the files are very big, we manually control garbage collection
         import gc
+
         try:
             acc = self.get_cocounts(fragment, compressed=compressed)
+
+        # FIXME: all-catching is a bad practice that creates bugs, need to change
+        # the following line
         except:
             return_args = (None, None, None, None)
+
         else:
             # calculate single nucleotide frequencies and determine variable sites
             af1p = np.array(acc[:,:,np.arange(acc.shape[2]), np.arange(acc.shape[3])].sum(axis=1),dtype=float)
@@ -247,7 +253,10 @@ class Sample(pd.Series):
                 print "no variable sites"
                 return_args = (None, None, None, None)
             del acc, af1p
+
+        finally:
             gc.collect()
+
         return return_args
 
 
