@@ -588,7 +588,6 @@ class Patient(pd.Series):
         if 'accessibility' in sources:
             from .external import load_accessibility
             ascores = load_accessibility()
-            print ascores
             for prot in ascores:
                 if prot in self.annotation and prot not in ['tat', 'rev']:
                     m = self.map_to_external_reference(prot, 'HXB2')
@@ -596,11 +595,15 @@ class Patient(pd.Series):
                         m=m[:-3]
                     hxb2_pos = m[:,0]- m[0,0]
                     try:
-                        for pos, val in zip(m[0::3,1], ascores[prot][(hxb2_pos[1::3]-1)//3,:]):
+                        for pos, val in ascores[prot]:
                             for ii in range(3):
-                                if 'accessibility' not in self.pos_to_feature[pos+ii]:
-                                    self.pos_to_feature[pos+ii]['accessibility']={}
-                                self.pos_to_feature[pos+ii]['accessibility'][prot] = val
+                                nuc_pos = m[0,0] + pos*3 + ii
+                                if nuc_pos in m[:,0]:
+                                    nuc_ii = np.searchsorted(m[:,0], nuc_pos)
+                                    pat_pos = m[nuc_ii,1]
+                                    if 'accessibility' not in self.pos_to_feature[pat_pos]:
+                                        self.pos_to_feature[pat_pos]['accessibility']={}
+                                    self.pos_to_feature[pat_pos]['accessibility'][prot] = val
                     except:
                         import ipdb; ipdb.set_trace()
 

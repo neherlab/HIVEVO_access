@@ -49,12 +49,7 @@ def load_disorder_scores_HXB2():
                 pname = line.split()[0]
                 our_pname = Li_et_al_protein_translation[pname]
                 npos = int(line.split(',')[0].split()[1][1:])
-                print pname, our_pname
-                if type(our_pname)==str:
-                    print len(hxb2.annotation[our_pname]), len(hxb2.annotation[our_pname])/3, npos
-                else:
-                    for n in our_pname:
-                        print len(hxb2.annotation[n]), len(hxb2.annotation[n])/3, npos
+                if type(our_pname)==list:
                     our_pname = "_".join(our_pname)
                 dscores[our_pname]={}
 
