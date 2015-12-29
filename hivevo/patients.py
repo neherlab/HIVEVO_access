@@ -57,7 +57,7 @@ class Patient(pd.Series):
         self._initial_consensus_noinsertions()
 
         # TODO: this is experimental
-        self.positions_to_features(sources=['annotations', 'shape'])
+        self.positions_to_features(sources=['annotations', 'shape', 'disorder', 'accessibility'])
 
 
     @classmethod
@@ -251,7 +251,7 @@ class Patient(pd.Series):
                 ict[(time, position, insertion)] = value
         ict = pd.Series(ict, name='insertions')
         if len(ict):
-            ict.index.names = ['DSI', 'position', 'insertion']
+            ict.index.names = ['DSI', 'position', 'insertion', "accessibility"]
         return ict
 
 
@@ -565,6 +565,44 @@ class Patient(pd.Series):
                         self.pos_to_feature[pos_pat]['RNA partner'] = md[partner]
                     else:
                         self.pos_to_feature[pos_pat]['RNA partner'] = 'missing'
+
+        if 'disorder' in sources:
+            from .external import load_disorder_scores_HXB2
+            dscores = load_disorder_scores_HXB2()
+            for prot in dscores:
+                if prot in self.annotation and prot not in ['tat', 'rev']:
+                    m = self.map_to_external_reference(prot, 'HXB2')
+                    if prot in ['p6', 'IN', 'gp41', 'vif', 'nef', 'vpu','vpr']:
+                        m=m[:-3]
+                    hxb2_pos = m[:,0]- m[0,0]
+                    try:
+                        for pos, val in zip(m[0::3,1], dscores[prot]['val'][(hxb2_pos[1::3]-1)//3]):
+                            for ii in range(3):
+                                if 'disorder' not in self.pos_to_feature[pos+ii]:
+                                    self.pos_to_feature[pos+ii]['disorder']={}
+                                self.pos_to_feature[pos+ii]['disorder'][prot] = val
+                    except:
+                        import ipdb; ipdb.set_trace()
+
+
+        if 'accessibility' in sources:
+            from .external import load_accessibility
+            ascores = load_accessibility()
+            print ascores
+            for prot in ascores:
+                if prot in self.annotation and prot not in ['tat', 'rev']:
+                    m = self.map_to_external_reference(prot, 'HXB2')
+                    if prot in ['p6', 'IN', 'gp41', 'vif', 'nef', 'vpu','vpr']:
+                        m=m[:-3]
+                    hxb2_pos = m[:,0]- m[0,0]
+                    try:
+                        for pos, val in zip(m[0::3,1], ascores[prot][(hxb2_pos[1::3]-1)//3,:]):
+                            for ii in range(3):
+                                if 'accessibility' not in self.pos_to_feature[pos+ii]:
+                                    self.pos_to_feature[pos+ii]['accessibility']={}
+                                self.pos_to_feature[pos+ii]['accessibility'][prot] = val
+                    except:
+                        import ipdb; ipdb.set_trace()
 
 
     def get_fragment_depth(self, pad=False, limit_to_dilution = False):
