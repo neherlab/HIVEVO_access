@@ -90,11 +90,25 @@ def load_accessibility():
     import glob
     acc = {}
     for prot, our_pname in Li_et_al_protein_translation.iteritems():
-        fnames = glob.glob('data/external/Li_Retrovirology_2015/SurfaceAreaData/'+prot+'*.txt')
+        fnames = glob.glob(local_data_folder+'/external/Li_Retrovirology_2015/SurfaceAreaData/'+prot+'*.txt')
         if fnames:
             if type(our_pname)==list:
                 our_pname='_'.join(our_pname)
             acc[our_pname] = protein_areaSAS(fnames)
+
+    # fix RT_p15
+    our_pname = "RT_p15"
+    if our_pname in acc:
+        RT = []
+        p15 = []
+        for pos, val in acc["RT_p15"]:
+            if pos<=440:
+                RT.append((pos,val))
+            else:
+                p15.append((pos,val-440))
+
+        acc['RT']=np.array(RT)
+        acc['p15']=np.array(p15)
     return acc
 
 
