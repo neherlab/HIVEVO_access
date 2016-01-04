@@ -568,37 +568,46 @@ class Patient(pd.Series):
 
         if 'disorder' in sources:
             from .external import load_disorder_scores_HXB2
+            # the following returns a dictionary for each protein that contains a list of positions
+            # and values extracted from the tables by Li et al, Positions are codons (hopefully) from hxb2, zero numbering
             dscores = load_disorder_scores_HXB2()
             for prot in dscores:
+                # ignore tat and rev since they are split
                 if prot in self.annotation and prot not in ['tat', 'rev']:
                     m = self.map_to_external_reference(prot, 'HXB2')
+                    # remove trailing stop codon from the protein
                     if prot in ['p6', 'IN', 'gp41', 'vif', 'nef', 'vpu','vpr']:
                         m=m[:-3]
-                    hxb2_pos = m[:,0]- m[0,0]
+                    hxb2_codons = (m[:,0] - m[0,0])[::3]//3
                     try:
-                        for pos, val in zip(m[0::3,1], dscores[prot]['val'][(hxb2_pos[1::3]-1)//3]):
-                            for ii in range(3):
+                        # loop over every codon that aligns to HXB2
+                        for pos, val in zip(m[0::3,1], dscores[prot]['val'][hxb2_codons]):
+                            for ii in range(3): # add the same score to every position in the codon
                                 if 'disorder' not in self.pos_to_feature[pos+ii]:
                                     self.pos_to_feature[pos+ii]['disorder']={}
                                 self.pos_to_feature[pos+ii]['disorder'][prot] = val
                     except:
-                        import ipdb; ipdb.set_trace()
+                        print("Can't import disorder scores")
+                        #import ipdb; ipdb.set_trace()
 
 
         if 'accessibility' in sources:
             from .external import load_accessibility
             ascores = load_accessibility()
             for prot in ascores:
+                # ignore tat and rev since they are split
                 if prot in self.annotation and prot not in ['tat', 'rev']:
                     m = self.map_to_external_reference(prot, 'HXB2')
+                    # remove trailing stop codon from the protein
                     if prot in ['p6', 'IN', 'gp41', 'vif', 'nef', 'vpu','vpr']:
                         m=m[:-3]
-                    hxb2_pos = m[:,0]- m[0,0]
                     try:
+                        # loop over position value pairs
                         for pos, val in ascores[prot]:
-                            for ii in range(3):
-                                nuc_pos = m[0,0] + pos*3 + ii
-                                if nuc_pos in m[:,0]:
+                            for ii in range(3): # loop over positions in codon
+                                nuc_pos = m[0,0] + pos*3 + ii #nucleotide position in hxb2
+                                if nuc_pos in m[:,0]: #if maps to patient
+                                    # find index and corresponding position in patient
                                     nuc_ii = np.searchsorted(m[:,0], nuc_pos)
                                     pat_pos = m[nuc_ii,1]
                                     if 'accessibility' not in self.pos_to_feature[pat_pos]:
