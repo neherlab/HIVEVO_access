@@ -57,7 +57,7 @@ class Patient(pd.Series):
         self._initial_consensus_noinsertions()
 
         # TODO: this is experimental
-        self.positions_to_features(sources=['annotations', 'shape', 'disorder', 'accessibility'])
+        self.positions_to_features(sources=['annotations', 'shape', 'disorder', 'accessibility', 'structural'])
 
 
     @classmethod
@@ -613,6 +613,35 @@ class Patient(pd.Series):
                                     if 'accessibility' not in self.pos_to_feature[pat_pos]:
                                         self.pos_to_feature[pat_pos]['accessibility']={}
                                     self.pos_to_feature[pat_pos]['accessibility'][prot] = val
+                    except:
+                        import ipdb; ipdb.set_trace()
+
+        if 'structural' in sources:
+            from .external import load_structural_effects_NL43
+            struct_scores, cons_seqs = load_structural_effects_NL43()
+            for prot in struct_scores:
+                # ignore tat and rev since they are split
+                if prot in self.annotation and prot not in ['tat', 'rev']:
+                    m = self.map_to_external_reference(prot, 'NL4-3')
+                    # remove trailing stop codon from the protein
+                    if prot in ['p6', 'IN', 'gp41', 'vif', 'nef', 'vpu','vpr']:
+                        m=m[:-3]
+                    try:
+                        # loop over position value pairs
+                        for pi, (pos, val) in enumerate(struct_scores[prot]):
+                            for ii in range(3): # loop over positions in codon
+                                nuc_pos = m[0,0] + pos*3 + ii #nucleotide position in hxb2
+                                if prot=='pol':
+                                    nuc_pos+=56*3
+                                if nuc_pos in m[:,0]: #if maps to patient
+                                    # find index and corresponding position in patient
+                                    nuc_ii = np.searchsorted(m[:,0], nuc_pos)
+                                    pat_pos = m[nuc_ii,1]
+                                    if 'structural' not in self.pos_to_feature[pat_pos]:
+                                        self.pos_to_feature[pat_pos]['structural']={}
+                                        self.pos_to_feature[pat_pos]['ref']={}
+                                    self.pos_to_feature[pat_pos]['structural'][prot] = val
+                                    self.pos_to_feature[pat_pos]['ref'][prot] = cons_seqs[prot][pi]
                     except:
                         import ipdb; ipdb.set_trace()
 

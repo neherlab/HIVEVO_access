@@ -11,6 +11,34 @@ from .HIVreference import HIVreference
 from .filenames import local_data_folder
 
 
+def load_structural_effects_NL43():
+    from collections import defaultdict
+    import csv
+    from .sequence import alphaa
+    data_filename = local_data_folder+'external/Carlson_allWithP17Mono.energyPlusPlus.mutationCountCorrection.N.TXT'
+    with open(data_filename) as dfile:
+        data = csv.DictReader(dfile, delimiter='\t')
+        mutations = {}
+        for mut in data:
+            prot = mut["Protein"].lower()
+            if prot not in mutations: mutations[prot] = defaultdict(list)
+            mutations[prot][int(mut['Position'])-1].append(map(float, [mut[x] for x in
+                            ['RawAbs', 'Abs', 'ExpAbsDDE',  'ExpFreq', 'IhacFreq']]))
+
+    constraint = {}
+    cons_seqs = {}
+    for prot in mutations:
+        cons_seq = []
+        tmp = []
+        for pos in sorted(mutations[prot].keys()):
+            M = np.array(mutations[prot][pos])
+            pvec = M[:,-2]
+            cons_seq.append(alphaa[M[:,-1].argmax()])
+            tmp.append( (pos, -np.sum(pvec*np.log(pvec+1e-20))))
+        constraint[prot] = np.array(tmp)
+        cons_seqs[prot]=cons_seq
+    return constraint, cons_seqs
+
 def load_pairing_probability_NL43():
     data_filename = local_data_folder+'external/nmeth.3029-S4.txt'
     data = read_csv(data_filename, header=1, sep='\t', index_col=0)
