@@ -32,9 +32,9 @@ def load_structural_effects_NL43():
         tmp = []
         for pos in sorted(mutations[prot].keys()):
             M = np.array(mutations[prot][pos])
-            pvec = M[:,-2]
+            pvec = M[:,-2] #predicted amino acid probabilities
             cons_seq.append(alphaa[M[:,-1].argmax()])
-            tmp.append( (pos, -np.sum(pvec*np.log(pvec+1e-20))))
+            tmp.append( (pos, -np.sum(pvec*np.log(pvec+1e-20)))) # attach predicted entropy
         constraint[prot] = np.array(tmp)
         cons_seqs[prot]=cons_seq
     return constraint, cons_seqs

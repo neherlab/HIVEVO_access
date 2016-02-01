@@ -631,7 +631,7 @@ class Patient(pd.Series):
                         for pi, (pos, val) in enumerate(struct_scores[prot]):
                             for ii in range(3): # loop over positions in codon
                                 nuc_pos = m[0,0] + pos*3 + ii #nucleotide position in hxb2
-                                if prot=='pol':
+                                if prot=='pol': # they start numbering at the start of the PR
                                     nuc_pos+=56*3
                                 if nuc_pos in m[:,0]: #if maps to patient
                                     # find index and corresponding position in patient
