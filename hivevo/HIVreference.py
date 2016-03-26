@@ -14,6 +14,41 @@ from .filenames import (get_custom_reference_filename,
                         get_subtype_reference_allele_frequencies_filename)
 
 
+class ReferenceTranslator(object):
+    """docstring for ReferenceTranslater"""
+    def __init__(self, ref1='HXB2', ref2='NL4-3'):
+        super(ReferenceTranslator, self).__init__()
+        self.ref1 = ref1
+        self.ref2 = ref2
+
+        self.refseq1 = SeqIO.read(get_custom_reference_filename(self.ref1, format='gb'), format='genbank').seq
+        self.refseq2 = SeqIO.read(get_custom_reference_filename(self.ref2, format='gb'), format='genbank').seq
+
+        from seqanpy import align_global
+        (score, ali1, ali2) = align_global(str(self.refseq1), str(self.refseq2), band=200)
+        self.count1 = np.cumsum(np.fromstring(ali1,'S1')!='-')-1
+        self.count2 = np.cumsum(np.fromstring(ali2,'S1')!='-')-1
+
+    def translate(self, pos, ref=None):
+        if ref is None:
+            ref = self.ref1
+        if ref == self.ref1:
+            ii = np.searchsorted(self.count1,pos)
+            if ii<len(self.count2):
+                return self.ref2, self.count2[ii]
+            else:
+                return self.ref2, -1
+        elif ref ==self.ref2:
+            ii = np.searchsorted(self.count2,pos)
+            if ii<len(self.count1):
+                return self.ref1, self.count1[ii]
+            else:
+                return self.ref1, -1
+        else:
+            print("unknown reference", ref)
+            return "not found", np.nan
+
+
 
 class HIVreference(object):
     """docstring for HIVreference"""
@@ -63,7 +98,7 @@ class HIVreference(object):
     def get_entropy_quantiles(self, q):
         from scipy.stats import scoreatpercentile
         thresholds = [scoreatpercentile(self.entropy, 100.0*i/q) for i in range(q+1)]
-        return {i: {'range':(thresholds[i],thresholds[i+1]), 
+        return {i: {'range':(thresholds[i],thresholds[i+1]),
                     'ind':np.where((self.entropy>=thresholds[i])*(self.entropy<thresholds[i+1]))[0]}
                for i in range(q)}
 
