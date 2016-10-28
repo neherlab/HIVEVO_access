@@ -120,7 +120,13 @@ class Sample(pd.Series):
                 fname = get_allele_counts_filename(self.name, fragment, type=type)
                 if not os.path.isfile(fname):
                     continue
-                tmp_ac = np.load(fname).sum(axis=0)
+                # Accept float and int, but cast to int
+                tmp_ac = np.asarray(np.load(fname), int)
+
+                # The zero-th dimension is sometimes the read type (read1/2/fwd/rev)
+                if len(tmp_ac.shape) == 3:
+                    tmp_ac = tmp_ac.sum(axis=0)
+
                 if add:
                     ac[:,coord[0]] += tmp_ac[:, coordinates[fragment][1]]
                 else:

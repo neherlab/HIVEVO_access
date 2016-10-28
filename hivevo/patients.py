@@ -52,6 +52,7 @@ class Patient(pd.Series):
         self._n_templates_dilutions = np.ma.masked_invalid([x.get_n_templates_dilutions() for x in self.samples])
         self._times = []
         self.reference = self.load_reference()
+
         # translate genbank encoded sequence features into a dictionary
         self.annotation = {x.qualifiers['note'][-1]: x for x in self.reference.features}
         self._initial_consensus_noinsertions()
@@ -156,7 +157,7 @@ class Patient(pd.Series):
     def _annotation_to_fragment_indices(self, anno):
         '''
         returns coordinates of a region specified in the annotation
-        in terms of the fragments F1 to F5. This is needed to extract
+        in terms of the fragments F1 to F6. This is needed to extract
         region specific allele counts, frequencies etc.
         returns a dict containing 'length', 'start' (of the region in the genome)
         and for each fragment involved 'F1': (indices in the region of interest, indices on the fragment)
@@ -255,7 +256,7 @@ class Patient(pd.Series):
         return ict
 
 
-    def get_allele_frequency_trajectories(self, region, safe=False,error_rate = 2e-3, type='nuc',  **kwargs):
+    def get_allele_frequency_trajectories(self, region, safe=False, error_rate=2e-3, type='nuc',  **kwargs):
         '''Get the allele count trajectories from files
 
         Args:
@@ -359,7 +360,7 @@ class Patient(pd.Series):
             return None
 
 
-    def _initial_consensus_noinsertions(self, region='genomewide',VERBOSE=0, type='nuc'):
+    def _initial_consensus_noinsertions(self, region='genomewide', VERBOSE=0, type='nuc'):
         '''Make initial consensus from allele frequencies, keep coordinates and masked
         sets: indices and sequence of initial sequence
         '''
@@ -374,18 +375,20 @@ class Patient(pd.Series):
             cons_ind_later = af_later.argmax(axis=0)
             cons_ind_later[af_later.mask.max(axis=0)] = mask_index
             ind_Ns = (cons_ind == mask_index) & (cons_ind_later != mask_index)
-            cons_ind[ind_Ns] = cons_ind_later[ind_Ns]
+            if ind_Ns.sum():
+                cons_ind[ind_Ns] = cons_ind_later[ind_Ns]
 
         if region == 'genomewide' and type == 'nuc':
             self.initial_indices = cons_ind
             self.initial_sequence = alpha[cons_ind]
+
         else:
             return cons_ind
 
     def get_initial_indices(self, region, type='nuc'):
         if type=='nuc':
             if region == 'genomewide':
-                return self.initial_indices
+                return self.initial_indices.copy()
             elif region in self.annotation:
                 return np.array([self.initial_indices[pos] for pos in self.annotation[region]])
             else:
