@@ -5,6 +5,7 @@ date:       16/09/15
 content:    Module to interface with external data.
 '''
 # Modules
+import os
 from pandas import read_csv
 import numpy as np
 from .HIVreference import HIVreference
@@ -16,31 +17,38 @@ def load_structural_effects_NL43():
     import csv
     from .sequence import alphaa
     data_filename = local_data_folder+'external/Carlson_allWithP17Mono.energyPlusPlus.mutationCountCorrection.N.TXT'
-    with open(data_filename) as dfile:
-        data = csv.DictReader(dfile, delimiter='\t')
-        mutations = {}
-        for mut in data:
-            prot = mut["Protein"].lower()
-            if prot not in mutations: mutations[prot] = defaultdict(list)
-            mutations[prot][int(mut['Position'])-1].append(map(float, [mut[x] for x in
-                            ['RawAbs', 'Abs', 'ExpAbsDDE',  'ExpFreq', 'IhacFreq']]))
+    if os.path.isfile(data_filename):
+        with open(data_filename) as dfile:
+            data = csv.DictReader(dfile, delimiter='\t')
+            mutations = {}
+            for mut in data:
+                prot = mut["Protein"].lower()
+                if prot not in mutations: mutations[prot] = defaultdict(list)
+                mutations[prot][int(mut['Position'])-1].append(map(float, [mut[x] for x in
+                                ['RawAbs', 'Abs', 'ExpAbsDDE',  'ExpFreq', 'IhacFreq']]))
 
-    constraint = {}
-    cons_seqs = {}
-    for prot in mutations:
-        cons_seq = []
-        tmp = []
-        for pos in sorted(mutations[prot].keys()):
-            M = np.array(mutations[prot][pos])
-            pvec = M[:,-2] #predicted amino acid probabilities
-            cons_seq.append(alphaa[M[:,-1].argmax()])
-            tmp.append( (pos, -np.sum(pvec*np.log(pvec+1e-20)))) # attach predicted entropy
-        constraint[prot] = np.array(tmp)
-        cons_seqs[prot]=cons_seq
-    return constraint, cons_seqs
+        constraint = {}
+        cons_seqs = {}
+        for prot in mutations:
+            cons_seq = []
+            tmp = []
+            for pos in sorted(mutations[prot].keys()):
+                M = np.array(mutations[prot][pos])
+                pvec = M[:,-2] #predicted amino acid probabilities
+                cons_seq.append(alphaa[M[:,-1].argmax()])
+                tmp.append( (pos, -np.sum(pvec*np.log(pvec+1e-20)))) # attach predicted entropy
+            constraint[prot] = np.array(tmp)
+            cons_seqs[prot]=cons_seq
+        return constraint, cons_seqs
+    else:
+        print("file %s not found"%data_filename)
+        return None, None
 
 def load_pairing_probability_NL43():
     data_filename = local_data_folder+'external/nmeth.3029-S4.txt'
+    if not os.path.isfile(data_filename):
+        print("file %s not found"%data_filename)
+        return None
     data = read_csv(data_filename, header=1, sep='\t', index_col=0)
     data.rename(columns={'j': 'partner'}, inplace=True)
     data.index.name = 'position'
@@ -69,6 +77,9 @@ Li_et_al_protein_translation = {"Matrix":'p17', "Capsid":"p24", "Nucleocapsid":"
 
 def load_disorder_scores_HXB2():
     disorder_filename = local_data_folder+'external/Li_Retrovirology_2015/HIVGenome_DisorderScore.csv'
+    if not os.path.isfile(disorder_filename):
+        print("file %s not found"%disorder_filename)
+        return None
     hxb2 = HIVreference("HXB2")
     dscores = {}
 
