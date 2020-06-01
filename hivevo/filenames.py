@@ -26,9 +26,10 @@ elif os.path.isdir('/var/www/hivwholeweb/'):
 elif os.path.isdir('/home/fabio/') and (not os.path.isdir('/ebio/ag-neher/share/data')):
     root_data_folder = '/home/fabio/university/phd/sequencing/data/'
 
-# MPI's file server
+# MPI's or BZs file server
 else:
-    root_data_folder = '/ebio/ag-neher/share/data/MiSeq_HIV_Karolinska/'
+    root_data_folder = '/scicore/home/neher/GROUP/data/MiSeq_HIV_Karolinska/'
+    #root_data_folder = '/ebio/ag-neher/share/data/MiSeq_HIV_Karolinska/'
 
 root_data_folder = root_data_folder.rstrip(os.path.sep)+os.path.sep
 

@@ -166,7 +166,7 @@ class Patient(pd.Series):
         region_indices = self._region_to_indices(anno)
         coordinates['start'] = min(region_indices)
         coordinates['length'] = len(region_indices)
-        fragments = ['F'+str(i) for i in xrange(1,7)]
+        fragments = ['F'+str(i) for i in range(1,7)]
 
         # if requested region is a fragment, return only this fragment
         if anno in fragments:
@@ -248,7 +248,7 @@ class Patient(pd.Series):
         for tmp_sample in self.samples:
             time = tmp_sample['days since infection']
             ic = tmp_sample.get_insertions(coordinates, **kwargs)
-            for (position, insertion), value in ic.iteritems():
+            for (position, insertion), value in ic.items():
                 ict[(time, position, insertion)] = value
         ict = pd.Series(ict, name='insertions')
         if len(ict):
@@ -298,7 +298,7 @@ class Patient(pd.Series):
                         or self.pos_to_feature[pos]['gene']>1
                         for pos in self.annotation[region]])
         else:
-            print region, "is not a valid protein or gene"
+            print(region, "is not a valid protein or gene")
             return None
 
 
@@ -312,12 +312,12 @@ class Patient(pd.Series):
                     gaps[max(0,ci-3*pad):ci+3*(1+pad)]=True
             return gaps
         else:
-            print region,"is not a valid protein or gene"
+            print(region,"is not a valid protein or gene")
             return None
 
 
     def get_syn_mutations(self, region, mask_constrained=True):
-        from itertools import izip
+        
         if region in self.annotation and self.annotation[region].type in ['gene', 'protein']:
             try:
                 aft = self.get_allele_frequency_trajectories(region)
@@ -336,10 +336,10 @@ class Patient(pd.Series):
                 cons_aa = np.array([np.fromstring(Seq.translate(''.join(cons)),
                                    dtype='|S1') for cons in consensi])
                 no_substitution = np.repeat(np.array([len(np.unique(col[ind]))==1
-                                for ind, col in izip(aft_valid.T[::3], cons_aa.T)], dtype=bool), 3)
+                                for ind, col in zip(aft_valid.T[::3], cons_aa.T)], dtype=bool), 3)
 
                 syn_muts = np.zeros(aft.shape[1:], dtype=bool)
-                for pos in xrange(aft.shape[-1]):
+                for pos in range(aft.shape[-1]):
                     ci = pos//3
                     rf = pos%3
                     codon = ''.join(initial_seq[ci*3:(ci+1)*3])
@@ -356,7 +356,7 @@ class Patient(pd.Series):
             except:
                 import pdb; pdb.set_trace()
         else:
-            print region,"is not a valid protein or gene"
+            print(region,"is not a valid protein or gene")
             return None
 
 
@@ -392,7 +392,7 @@ class Patient(pd.Series):
             elif region in self.annotation:
                 return np.array([self.initial_indices[pos] for pos in self.annotation[region]])
             else:
-                print "Not a valid annotation:", region
+                print("Not a valid annotation:", region)
                 return None
         elif type=='aa':
             return self._initial_consensus_noinsertions(region, type=type)
@@ -408,7 +408,7 @@ class Patient(pd.Series):
 
     def get_diversity(self, region):
         aft = self.get_allele_frequency_trajectories(region)
-        return np.array(map(diversity, aft))
+        return np.array(list(map(diversity, aft)))
 
 
     def get_consensi(self, region):
@@ -449,7 +449,7 @@ class Patient(pd.Series):
 
         else:
             try:
-                start, stop = map(int, roi)
+                start, stop = list(map(int, roi))
                 start_ind = np.searchsorted(genomewide_map[:,in_patient], start)
                 stop_ind = np.searchsorted(genomewide_map[:,in_patient], stop)
                 return np.vstack((genomewide_map[start_ind:stop_ind].T,
@@ -503,7 +503,7 @@ class Patient(pd.Series):
         ind = np.array(ind_tmp, int) // 3
 
         if roi not in self.annotation:
-            start, stop = map(int, roi[1:])
+            start, stop = list(map(int, roi[1:]))
             ind = ind[(ind[:, in_patient] >= start) & (ind[:, in_patient] < stop)]
 
         return ind
@@ -530,7 +530,7 @@ class Patient(pd.Series):
                 posfea['codons'] = []
                 posfea['protein_codon'] = []
 
-            for fname, feature in self.annotation.iteritems():
+            for fname, feature in self.annotation.items():
                 for ii, pos in enumerate(feature):
                     if feature.type=='gene':
                         self.pos_to_feature[pos]['gene']+=1
@@ -622,31 +622,34 @@ class Patient(pd.Series):
         if 'structural' in sources:
             from .external import load_structural_effects_NL43
             struct_scores, cons_seqs = load_structural_effects_NL43()
-            for prot in struct_scores:
-                # ignore tat and rev since they are split
-                if prot in self.annotation and prot not in ['tat', 'rev']:
-                    m = self.map_to_external_reference(prot, 'NL4-3')
-                    # remove trailing stop codon from the protein
-                    if prot in ['p6', 'IN', 'gp41', 'vif', 'nef', 'vpu','vpr']:
-                        m=m[:-3]
-                    try:
-                        # loop over position value pairs
-                        for pi, (pos, val) in enumerate(struct_scores[prot]):
-                            for ii in range(3): # loop over positions in codon
-                                nuc_pos = m[0,0] + pos*3 + ii #nucleotide position in hxb2
-                                if prot=='pol': # they start numbering at the start of the PR
-                                    nuc_pos+=56*3
-                                if nuc_pos in m[:,0]: #if maps to patient
-                                    # find index and corresponding position in patient
-                                    nuc_ii = np.searchsorted(m[:,0], nuc_pos)
-                                    pat_pos = m[nuc_ii,1]
-                                    if 'structural' not in self.pos_to_feature[pat_pos]:
-                                        self.pos_to_feature[pat_pos]['structural']={}
-                                        self.pos_to_feature[pat_pos]['ref']={}
-                                    self.pos_to_feature[pat_pos]['structural'][prot] = val
-                                    self.pos_to_feature[pat_pos]['ref'][prot] = cons_seqs[prot][pi]
-                    except:
-                        import ipdb; ipdb.set_trace()
+            if struct_scores is not None:
+                for prot in struct_scores:
+                    # ignore tat and rev since they are split
+                    if prot in self.annotation and prot not in ['tat', 'rev']:
+                        m = self.map_to_external_reference(prot, 'NL4-3')
+                        # remove trailing stop codon from the protein
+                        if prot in ['p6', 'IN', 'gp41', 'vif', 'nef', 'vpu','vpr']:
+                            m=m[:-3]
+                        try:
+                            # loop over position value pairs
+                            for pi, (pos, val) in enumerate(struct_scores[prot]):
+                                for ii in range(3): # loop over positions in codon
+                                    nuc_pos = m[0,0] + pos*3 + ii #nucleotide position in hxb2
+                                    if prot=='pol': # they start numbering at the start of the PR
+                                        nuc_pos+=56*3
+                                    if nuc_pos in m[:,0]: #if maps to patient
+                                        # find index and corresponding position in patient
+                                        nuc_ii = np.searchsorted(m[:,0], nuc_pos)
+                                        pat_pos = m[nuc_ii,1]
+                                        if 'structural' not in self.pos_to_feature[pat_pos]:
+                                            self.pos_to_feature[pat_pos]['structural']={}
+                                            self.pos_to_feature[pat_pos]['ref']={}
+                                        self.pos_to_feature[pat_pos]['structural'][prot] = val
+                                        self.pos_to_feature[pat_pos]['ref'][prot] = cons_seqs[prot][pi]
+                        except:
+                            import ipdb; ipdb.set_trace()
+            else:
+                print("couldn load structural scores")
 
 
     def get_fragment_depth(self, pad=False, limit_to_dilution = False):
@@ -654,11 +657,11 @@ class Patient(pd.Series):
         depth = np.ma.array([s.fragment_depth(c,cov_min=100, var_min=0.05, min_points=10)
                              for s in self.samples])
         if pad:
-            for si in xrange(len(self.samples)):
+            for si in range(len(self.samples)):
                 depth[si][depth.mask[si]] = self.n_templates_dilutions[si]
                 depth.mask[si] = False
         if limit_to_dilution:
-            for si in xrange(len(self.samples)):
+            for si in range(len(self.samples)):
                 depth[si] = np.minimum(depth[si], self.n_templates_dilutions[si])
         return depth
 
@@ -788,7 +791,7 @@ class Patient(pd.Series):
             data.append(ctl_table)
 
         ctl_table = pd.concat(data).sort('start_HXB2')
-        ctl_table.index = range(len(ctl_table))
+        ctl_table.index = list(range(len(ctl_table)))
 
         return ctl_table
 
@@ -804,7 +807,7 @@ class Patient(pd.Series):
 
         TODO: ROI de novo computation not implemented yet.
         '''
-        if isinstance(region, basestring):
+        if isinstance(region, str):
             from Bio import AlignIO
             from .filenames import get_haplotype_alignment_filename
             fn = get_haplotype_alignment_filename(self.name, region, 'fasta')
@@ -819,7 +822,7 @@ class Patient(pd.Series):
         def find_closest_alignment_filename():
             import os
             from .filenames import get_haplotype_alignment_filename
-            for dist in xrange(10000):
+            for dist in range(10000):
                 for start in [position - dist, position + dist]:
                     region = 'insertion_'+str(start)+'-'+str(start+length)
                     fn = get_haplotype_alignment_filename(self.name, region, 'fasta')

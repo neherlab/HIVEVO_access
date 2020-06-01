@@ -11,7 +11,7 @@ import pandas as pd
 import os
 import sys
 from collections import defaultdict
-from itertools import izip
+
 
 all_fragments = ['F'+str(i) for i in range(1,7)]
 
@@ -40,15 +40,15 @@ class Sample(pd.Series):
         dilstr = self.dilutions
         # parse the dilutions string expected to be of type 1:100 (1/2), where (1/2) mean one successful
         # amplification out of 2 trials
-        if not isinstance(dilstr, basestring):
-            print (self.name+": Templates from dilutions expecting a string, got", dilstr,
-                   "falling back on viral load /60:", self['viral load']/60.0)
+        if not isinstance(dilstr, str):
+            print((self.name+": Templates from dilutions expecting a string, got", dilstr,
+                   "falling back on viral load /60:", self['viral load']/60.0))
             val = self['viral load']/60.0
         else:
             try:
                 # extract the last positive dilution (dil_factor) and the number of successful dilutions
                 dil_factor = float(dilstr.split()[0].split(':')[1])
-                n_positive = map(int, dilstr.split()[1][1:-1].split('/'))
+                n_positive = list(map(int, dilstr.split()[1][1:-1].split('/')))
                 for dil in dilutions:
                     if dil<dil_factor: #assume all previous dilutions were successful
                         successful.append([2,2])
@@ -70,7 +70,7 @@ class Sample(pd.Series):
                 x_opt = minimize(prob, x0=2.0, args = (dilutions, successful), method='Powell')
                 val = np.exp(x_opt.x)
             except:
-                print "Parsing", dilstr, "didn't work. falling back on viral load /60:", self['viral load']/60.0
+                print("Parsing", dilstr, "didn't work. falling back on viral load /60:", self['viral load']/60.0)
                 val = self['viral load']/60.0
         return val
 
@@ -116,14 +116,14 @@ class Sample(pd.Series):
         if type == 'nuc':
             from .sequence import alpha
             ac = np.ma.zeros((len(alpha), coordinates['length']), dtype=int)
-            for fragment, coord in coordinates.iteritems():
+            for fragment, coord in coordinates.items():
                 fname = get_allele_counts_filename(self.name, fragment, type=type)
                 if not os.path.isfile(fname):
                     continue
                 try:
                     tmp_ac = np.load(fname)
                 except:
-                    print("can't load allele counts:", fname)
+                    print(("can't load allele counts:", fname))
 
                 # Accept float and int, but cast to int
                 tmp_ac = np.asarray(tmp_ac int)
@@ -139,7 +139,7 @@ class Sample(pd.Series):
 
         elif type == 'aa':
             # The dict should have a single protein not the best data structure
-            for protein, coord in coordinates.iteritems():
+            for protein, coord in coordinates.items():
                 fname = get_allele_counts_filename(self.name, protein, type=type)
                 ac = np.load(fname)
                 if coord is not None:
@@ -161,7 +161,7 @@ class Sample(pd.Series):
         '''Get insertions from this sample'''
         from .filenames import get_insertions_filename
         ic = Counter()
-        for fragment, coord in coordinates.iteritems():
+        for fragment, coord in coordinates.items():
             fname = get_insertions_filename(self.name, fragment)
             if not os.path.isfile(fname):
                 continue
@@ -170,7 +170,7 @@ class Sample(pd.Series):
                 tmp_ic = pd.read_pickle(fname)
             except IOError:
                 continue
-            for (position, insertion), value in tmp_ic.iteritems():
+            for (position, insertion), value in tmp_ic.items():
                 if position not in coordd:
                     continue
                 key = (coordd[position], insertion)
@@ -261,7 +261,7 @@ class Sample(pd.Series):
                 reduced_af2p /= (1e-10+reduced_acc_cov)
                 return_args = (positions, reduced_af2p, reduced_acc_cov, af1p[:,variable_sites])
             else:
-                print "no variable sites"
+                print("no variable sites")
                 return_args = (None, None, None, None)
             del acc, af1p
 
@@ -281,7 +281,7 @@ class Sample(pd.Series):
         min_points    --  the minimal number of valid frequencies required to attempt estimation
         pseudo_counts --  number of additional pseudo_counts to include, these are equal to the depth estimate from dilutions
         '''
-        overlaps = zip(all_fragments[:-1], all_fragments[1:])
+        overlaps = list(zip(all_fragments[:-1], all_fragments[1:]))
         # extract variant frequencies in overlaps
         overlap_frequencies = []
         for f1,f2 in overlaps:
@@ -311,12 +311,12 @@ class Sample(pd.Series):
 
         # split into chains
         chains = [[]]
-        for (f1,f2), neff in izip(overlaps, neff_overlaps):
+        for (f1,f2), neff in zip(overlaps, neff_overlaps):
             if neff is None:
                 chains.append([])
             else:
                 chains[-1].append((f1,f2,neff))
-        chains = filter(lambda x:len(x), chains) # clean empty chains out
+        chains = [x for x in chains if len(x)] # clean empty chains out
 
         # distribute variation to fragments
         neff_fragments = np.ma.masked_all(len(all_fragments))
@@ -352,7 +352,7 @@ class Sample(pd.Series):
                     if True: #try:
                         res = (start, stop, self.haplotypes(frag, start, stop))
                     else: #except:
-                        print "can't read haplotypes"
+                        print("can't read haplotypes")
                         res = (start, stop, None)
                     haps[frag].append(res)
                     start += length
