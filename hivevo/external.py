@@ -24,8 +24,8 @@ def load_structural_effects_NL43():
             for mut in data:
                 prot = mut["Protein"].lower()
                 if prot not in mutations: mutations[prot] = defaultdict(list)
-                mutations[prot][int(mut['Position'])-1].append(map(float, [mut[x] for x in
-                                ['RawAbs', 'Abs', 'ExpAbsDDE',  'ExpFreq', 'IhacFreq']]))
+                mutations[prot][int(mut['Position'])-1].append(list(map(float, [mut[x] for x in
+                                ['RawAbs', 'Abs', 'ExpAbsDDE',  'ExpFreq', 'IhacFreq']])))
 
         constraint = {}
         cons_seqs = {}
@@ -41,13 +41,13 @@ def load_structural_effects_NL43():
             cons_seqs[prot]=cons_seq
         return constraint, cons_seqs
     else:
-        print("file %s not found"%data_filename)
+        print(("file %s not found"%data_filename))
         return None, None
 
 def load_pairing_probability_NL43():
     data_filename = local_data_folder+'external/nmeth.3029-S4.txt'
     if not os.path.isfile(data_filename):
-        print("file %s not found"%data_filename)
+        print(("file %s not found"%data_filename))
         return None
     data = read_csv(data_filename, header=1, sep='\t', index_col=0)
     data.rename(columns={'j': 'partner'}, inplace=True)
@@ -78,7 +78,7 @@ Li_et_al_protein_translation = {"Matrix":'p17', "Capsid":"p24", "Nucleocapsid":"
 def load_disorder_scores_HXB2():
     disorder_filename = local_data_folder+'external/Li_Retrovirology_2015/HIVGenome_DisorderScore.csv'
     if not os.path.isfile(disorder_filename):
-        print("file %s not found"%disorder_filename)
+        print(("file %s not found"%disorder_filename))
         return None
     hxb2 = HIVreference("HXB2")
     dscores = {}
@@ -94,14 +94,14 @@ def load_disorder_scores_HXB2():
                     our_pname = "_".join(our_pname)
                 dscores[our_pname]={}
 
-                line = dfile.next()
+                line = next(dfile)
                 # make a ist of the positions, subtract one in the end since they start numbering at 1
-                pos = np.array(map(lambda x:int(x[3:]), filter(lambda x:len(x)>3, line.strip().split(','))))-1
+                pos = np.array([int(x[3:]) for x in [x for x in line.strip().split(',') if len(x)>3]])-1
                 dscores[our_pname]['pos'] = pos
 
-                line = dfile.next()
+                line = next(dfile)
                 # parse the values. the lines are longer than the number of position, hence filter for non-empty
-                val = np.array(map(float, filter(lambda x:len(x)>2, line.strip().split(','))))
+                val = np.array(list(map(float, [x for x in line.strip().split(',') if len(x)>2])))
                 dscores[our_pname]['val'] = val
     # RT needs special attention, since their RT corresponds to our RT and p15.
     our_pname = "RT_p15"
@@ -127,7 +127,7 @@ def protein_areaSAS(fnames):
                     val = float(val)
                     vals[pos].append(val)
     # subtract one from position to obtain zero numbering and take the mean of values from different chains
-    flat_vals = sorted([(p-1, np.mean(val)) for p, val in vals.iteritems()])
+    flat_vals = sorted([(p-1, np.mean(val)) for p, val in vals.items()])
 
     return np.array(flat_vals)
 
@@ -136,7 +136,7 @@ def load_accessibility():
     acc = {}
     # the accessibility data is provided as many different files, at times several for each
     # protein when structures have been determined piecewise.
-    for prot, our_pname in Li_et_al_protein_translation.iteritems():
+    for prot, our_pname in Li_et_al_protein_translation.items():
         fnames = glob.glob(local_data_folder+'/external/Li_Retrovirology_2015/SurfaceAreaData/'+prot+'*.txt')
         if fnames:
             if type(our_pname)==list: #fix multipartite names
