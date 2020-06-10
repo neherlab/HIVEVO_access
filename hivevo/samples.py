@@ -121,12 +121,12 @@ class Sample(pd.Series):
                 if not os.path.isfile(fname):
                     continue
                 try:
-                    tmp_ac = np.load(fname)
+                    tmp_ac = np.load(fname, encoding='bytes', allow_pickle=True)
                 except:
                     print(("can't load allele counts:", fname))
 
                 # Accept float and int, but cast to int
-                tmp_ac = np.asarray(tmp_ac int)
+                tmp_ac = np.asarray(tmp_ac, dtype=int)
 
                 # The zero-th dimension is sometimes the read type (read1/2/fwd/rev)
                 if len(tmp_ac.shape) == 3:

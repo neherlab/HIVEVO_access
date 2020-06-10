@@ -30,6 +30,7 @@ elif os.path.isdir('/home/fabio/') and (not os.path.isdir('/ebio/ag-neher/share/
 else:
     root_data_folder = '/scicore/home/neher/GROUP/data/MiSeq_HIV_Karolinska/'
     #root_data_folder = '/ebio/ag-neher/share/data/MiSeq_HIV_Karolinska/'
+    root_data_folder = '/media/richard/TOSHIBA EXT/MiSeq_HIV_Karolinska/'
 
 root_data_folder = root_data_folder.rstrip(os.path.sep)+os.path.sep
 
