@@ -63,7 +63,8 @@ class Sample(pd.Series):
                     # the extra 0.5 in the exponent accounts for the fact that we do to series starting with
                     # a total of 1/10th of the material for fragment 4
                     p = np.exp(-np.exp(logcn)/dil*0.5)
-                    return -np.sum( np.log((suc[:,0]==2)*(1-p)**2 + (suc[:,0]==1)*2*p*(1-p) + (suc[:,0]==0)*p**2 ))
+                    eps = 1e-12
+                    return -np.sum( np.log((suc[:,0]==2)*(1-p)**2 + (suc[:,0]==1)*2*p*(1-p) + (suc[:,0]==0)*p**2 + eps))
 
                 # numerically optimize the log probability of observing the pattern of dilutions
                 from scipy.optimize import minimize
