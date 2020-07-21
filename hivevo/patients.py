@@ -305,7 +305,7 @@ class Patient(pd.Series):
     def get_gaps_by_codon(self, region, pad=0, threshold=0.1):
         if region in self.annotation and self.annotation[region].type in ['gene', 'protein']:
             aft = self.get_allele_frequency_trajectories(region)
-            gap_index = list(alpha).index('-')
+            gap_index = list(alpha).index(b'-')
             gaps = np.zeros(aft.shape[-1],dtype=bool)
             for ci in range(0, aft.shape[-1],3):
                 if np.any(aft[:,gap_index,ci:ci+3]>threshold):
@@ -319,12 +319,12 @@ class Patient(pd.Series):
     def get_syn_mutations(self, region, mask_constrained=True):
 
         if region in self.annotation and self.annotation[region].type in ['gene', 'protein']:
-            try:
+            try :
                 aft = self.get_allele_frequency_trajectories(region)
                 if len(aft.mask.shape) == 0:
                     aft_valid = np.ones((aft.shape[0], aft.shape[-1]), dtype=bool)
                 else:
-                    aft_valid = -np.array([af.mask.sum(axis=0) for af in aft], dtype=bool)
+                    aft_valid = ~np.array([af.mask.sum(axis=0) for af in aft], dtype=bool)
                 gaps = self.get_gaps_by_codon(region)
                 initial_seq = self.get_initial_sequence(region)
                 consensi = []
@@ -333,8 +333,8 @@ class Patient(pd.Series):
                     tmp[gaps]='N'
                     consensi.append(tmp)
 
-                cons_aa = np.array([np.fromstring(Seq.translate(''.join(cons)),
-                                   dtype='|S1') for cons in consensi])
+                cons_aa = np.array([np.fromstring(Seq.translate(''.join(cons.astype('U'))),
+                                   dtype='S1') for cons in consensi])
                 no_substitution = np.repeat(np.array([len(np.unique(col[ind]))==1
                                 for ind, col in zip(aft_valid.T[::3], cons_aa.T)], dtype=bool), 3)
 
@@ -342,8 +342,8 @@ class Patient(pd.Series):
                 for pos in range(aft.shape[-1]):
                     ci = pos//3
                     rf = pos%3
-                    codon = ''.join(initial_seq[ci*3:(ci+1)*3])
-                    for ni,nuc in enumerate(alpha[:4]):
+                    codon = ''.join(initial_seq[ci*3:(ci+1)*3].astype("U"))
+                    for ni,nuc in enumerate(alpha[:4].astype("U")):
                         mod_codon = codon[:rf] + nuc + codon[rf+1:]
                         try:
                             syn_muts[ni,pos] = (Seq.translate(codon)==Seq.translate(mod_codon))\
@@ -354,7 +354,7 @@ class Patient(pd.Series):
                     syn_muts[:,self.get_constrained(region)] = False
                 return syn_muts
             except:
-                import pdb; pdb.set_trace()
+                import ipdb; ipdb.set_trace()
         else:
             print(region,"is not a valid protein or gene")
             return None
@@ -413,7 +413,7 @@ class Patient(pd.Series):
 
     def get_consensi(self, region):
         aft = self.get_allele_frequency_trajectories(region)
-        return [''.join(consensus(x)) for x in aft]
+        return [''.join(consensus(x).astype("U")) for x in aft]
 
 
     def get_divergence(self, region):
