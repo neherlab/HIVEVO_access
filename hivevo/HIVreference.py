@@ -78,9 +78,9 @@ class HIVreference(object):
     def calc_nucleotide_frequencies(self):
         self.af = np.zeros((len(alpha)-1, self.aln.shape[1]), dtype=float)
         for ni, nuc in enumerate(alpha[:-1]):
-            self.af[ni,:] = np.sum(self.aln==nuc, axis=0)
+            self.af[ni,:] = np.sum(self.aln==nuc.astype("U1"), axis=0)
         cov = np.sum(self.af, axis=0)
-        self.af /= cov
+        self.af /= cov + 1e-10
 
 
     def calc_entropy(self):
